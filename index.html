@@ -13,10 +13,15 @@
     <!-- 2. Icons (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- 3. CodeMirror CSS -->
+    <!-- 3. CodeMirror CSS & Addons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/eclipse.min.css">
+    
+    <!-- Addon CSS: Folding, Dialog (Search), Hint -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldgutter.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/show-hint.min.css">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -129,7 +134,8 @@
             flex: 1;
             display: flex;
             padding: 0.5rem;
-            gap: 0.5rem;
+            gap: 0; /* Gap removed for resizer */
+            position: relative;
         }
         
         @media (max-width: 768px) {
@@ -150,6 +156,29 @@
             background-color: var(--bg-panel);
             border: 1px solid var(--border-color);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            min-width: 200px; /* Minimum width for resizing */
+        }
+
+        /* Resizer Handle */
+        .resizer {
+            width: 8px;
+            background-color: transparent;
+            cursor: col-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 20;
+        }
+        .resizer:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .resizer::after {
+            content: "";
+            width: 2px;
+            height: 20px;
+            background-color: var(--border-color);
+            border-radius: 1px;
         }
 
         /* Tabs & Controls */
@@ -215,6 +244,12 @@
         .cm-s-dracula.CodeMirror { background-color: #282a36 !important; }
         .cm-s-eclipse.CodeMirror { background-color: #ffffff !important; }
 
+        /* CodeMirror Hints & Dialogs */
+        .CodeMirror-hints {
+            z-index: 100;
+            font-family: 'Fira Code', monospace;
+        }
+        
         /* --- Footer --- */
         .status-bar {
             height: 24px;
@@ -227,26 +262,108 @@
             padding: 0 1rem;
         }
         
-        /* Iframe Container for Resizing */
-        .iframe-wrapper {
+        /* Iframe Container */
+        .preview-wrapper {
             flex: 1;
-            background-color: #e5e5e5; /* Distinct background for preview area */
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-color: #e5e5e5;
+            overflow: hidden;
+        }
+        body.dark-mode .preview-wrapper {
+            background-color: #0f172a;
+        }
+
+        .iframe-container {
+            flex: 1;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
             overflow: auto;
             padding: 0;
-            position: relative;
-        }
-        body.dark-mode .iframe-wrapper {
-            background-color: #0f172a;
+            transition: height 0.3s;
         }
         
         #output-frame {
             background-color: white;
             transition: width 0.3s ease;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            height: 100%;
         }
+
+        /* --- Console Panel Styles --- */
+        #console-panel {
+            height: 150px;
+            background-color: #1e1e1e;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            transition: height 0.3s;
+        }
+        #console-panel.collapsed {
+            height: 0;
+            overflow: hidden;
+            border-top: none;
+        }
+        
+        .console-header {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            padding: 4px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        #console-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            color: #d4d4d4;
+        }
+        
+        .log-entry {
+            border-bottom: 1px solid #333;
+            padding: 2px 0;
+            display: flex;
+        }
+        .log-type { margin-right: 8px; font-weight: bold; }
+        .log-time { color: #666; margin-right: 8px; font-size: 10px; margin-top: 2px;}
+        
+        .log-info { color: #60a5fa; }
+        .log-warn { color: #facc15; }
+        .log-error { color: #f87171; }
+        .log-msg { white-space: pre-wrap; word-break: break-all; }
+
+        /* Libraries Modal */
+        #lib-modal {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            width: 250px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            padding: 1rem;
+            display: none;
+        }
+        #lib-modal.show { display: block; }
+        .lib-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .lib-item:hover { background-color: rgba(0,0,0,0.05); }
 
     </style>
 </head>
@@ -269,6 +386,25 @@
             
             <div class="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
+            <!-- Library Button -->
+            <button onclick="toggleLibModal()" class="text-xs font-medium px-3 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2" title="Add External Libraries">
+                <i class="fa-solid fa-layer-group text-purple-400"></i> Libs
+            </button>
+            
+            <!-- Color Picker -->
+            <div class="relative">
+                <input type="color" id="color-picker" onchange="insertColor(this.value)" class="absolute opacity-0 w-full h-full cursor-pointer">
+                <button class="text-xs font-medium px-3 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2" title="Pick Color">
+                    <i class="fa-solid fa-palette text-pink-400"></i> Color
+                </button>
+            </div>
+
+            <!-- Delete Button -->
+            <button onclick="oneClickDelete()" class="text-xs font-medium px-3 py-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition flex items-center gap-2" title="Instant Delete">
+                <i class="fa-solid fa-trash-can"></i> Clear
+            </button>
+
+            <!-- Format Button -->
             <button onclick="formatCode()" class="text-xs font-medium px-3 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2" title="Format Code">
                 <i class="fa-solid fa-wand-magic-sparkles text-yellow-500"></i> Format
             </button>
@@ -278,6 +414,23 @@
             </button>
         </div>
     </nav>
+
+    <!-- Libraries Modal -->
+    <div id="lib-modal">
+        <h3 class="text-sm font-bold mb-2">Add Library</h3>
+        <div class="lib-item" onclick="insertLib('bootstrap')">
+            <i class="fa-brands fa-bootstrap text-purple-600 mr-2"></i> Bootstrap 5
+        </div>
+        <div class="lib-item" onclick="insertLib('tailwind')">
+            <i class="fa-solid fa-wind text-blue-400 mr-2"></i> Tailwind CSS
+        </div>
+        <div class="lib-item" onclick="insertLib('jquery')">
+            <i class="fa-solid fa-dollar-sign text-blue-600 mr-2"></i> jQuery
+        </div>
+        <div class="lib-item" onclick="insertLib('fontawesome')">
+            <i class="fa-regular fa-flag text-orange-500 mr-2"></i> FontAwesome
+        </div>
+    </div>
 
     <!-- 2. WORKSPACE -->
     <div class="main-workspace">
@@ -293,42 +446,51 @@
             <div class="sidebar-btn" onclick="insertSnippet('form')" data-tooltip="Insert Form">
                 <i class="fa-solid fa-align-justify text-lg"></i>
             </div>
-            <div class="sidebar-btn" onclick="insertSnippet('card')" data-tooltip="UI Card">
-                <i class="fa-solid fa-id-card text-lg"></i>
+            <div class="sidebar-btn" onclick="insertSnippet('js-test')" data-tooltip="JS Console Test">
+                <i class="fa-brands fa-js text-xl text-yellow-400"></i>
             </div>
             <div class="flex-1"></div>
-            <div class="sidebar-btn text-red-500 hover:text-red-600" onclick="clearCode()" data-tooltip="Clear All">
+            <div class="sidebar-btn text-red-500 hover:text-red-600" onclick="clearCode()" data-tooltip="Reset All">
                 <i class="fa-solid fa-trash"></i>
             </div>
         </aside>
 
         <!-- MAIN SPLIT VIEW -->
-        <main class="split-container">
+        <main class="split-container" id="split-view">
             
             <!-- EDITOR PANE -->
-            <div class="panel-container">
+            <div class="panel-container" id="editor-panel" style="flex: 1;">
                 <div class="panel-header">
                     <div class="tab active">
                         <i class="fa-solid fa-file-code mr-2 text-blue-500"></i>index.html
                     </div>
-                    <!-- NEW: Copy Button -->
-                    <button onclick="copyCode()" class="text-xs text-gray-500 hover:text-blue-500 transition px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <i class="fa-regular fa-copy mr-1"></i> Copy
-                    </button>
+                    <div class="flex items-center gap-2">
+                         <span class="text-[10px] text-gray-500 mr-2 hidden md:block">Ctrl+F to Search | Ctrl+Space for Hints</span>
+                        <button onclick="copyCode()" class="text-xs text-gray-500 hover:text-blue-500 transition px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <i class="fa-regular fa-copy mr-1"></i> Copy
+                        </button>
+                    </div>
                 </div>
                 <div class="flex-1 relative">
                     <textarea id="code-editor"></textarea>
                 </div>
             </div>
 
+            <!-- RESIZER HANDLE -->
+            <div class="resizer" id="resizer"></div>
+
             <!-- PREVIEW PANE -->
-            <div class="panel-container">
+            <div class="panel-container" id="preview-panel" style="flex: 1;">
                 <div class="panel-header">
-                    <div class="tab active">
-                        <i class="fa-brands fa-chrome mr-2 text-green-500"></i>Preview
+                    <div class="flex items-center gap-2">
+                        <div class="tab active">
+                            <i class="fa-brands fa-chrome mr-2 text-green-500"></i>Preview
+                        </div>
+                        <button onclick="toggleConsole()" class="text-xs font-bold px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition ml-2" title="Toggle JS Console">
+                            <i class="fa-solid fa-terminal mr-1"></i> Console
+                        </button>
                     </div>
                     
-                    <!-- NEW: Device View Toggle -->
                     <div class="view-controls">
                         <div class="view-btn" onclick="setPreviewMode('mobile')" title="Mobile View">
                             <i class="fa-solid fa-mobile-screen"></i>
@@ -342,9 +504,25 @@
                     </div>
                 </div>
                 
-                <!-- Wrapper for iframe to handle centering when resized -->
-                <div class="iframe-wrapper">
-                    <iframe id="output-frame" class="w-full h-full border-none"></iframe>
+                <div class="preview-wrapper">
+                    <!-- Iframe Wrapper -->
+                    <div class="iframe-container">
+                        <iframe id="output-frame" class="w-full border-none"></iframe>
+                    </div>
+                    
+                    <!-- Console Panel -->
+                    <div id="console-panel" class="">
+                        <div class="console-header">
+                            <span><i class="fa-solid fa-terminal mr-2"></i> JS Console Output</span>
+                            <div class="flex gap-2">
+                                <button onclick="clearConsole()" class="hover:text-white text-gray-400"><i class="fa-solid fa-ban"></i> Clear</button>
+                                <button onclick="toggleConsole()" class="hover:text-white text-gray-400"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                        <div id="console-output">
+                            <div class="text-gray-500 italic p-2">Console ready... logs will appear here.</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -359,7 +537,7 @@
         </div>
         <div>
             <span id="save-status" class="mr-3 opacity-70">Saved</span>
-            <span>HTML5</span>
+            <span>HTML5 + JS</span>
         </div>
     </footer>
 
@@ -372,12 +550,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify-html.min.js"></script>
 
+    <!-- CodeMirror Addon Scripts: Folding, Search, Hints -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/xml-fold.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/search.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/xml-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/html-hint.min.js"></script>
+
     <script>
         // --- CONFIG ---
         const outputFrame = document.getElementById('output-frame');
         const themeIcon = document.getElementById('theme-icon');
         const charCount = document.getElementById('char-count');
         const saveStatus = document.getElementById('save-status');
+        const consoleOutput = document.getElementById('console-output');
+        const consolePanel = document.getElementById('console-panel');
         let isDarkMode = true;
 
         // --- EDITOR INIT ---
@@ -387,7 +581,12 @@
             lineNumbers: true,
             autoCloseTags: true,
             lineWrapping: true,
-            indentUnit: 4
+            indentUnit: 4,
+            // 1. Code Folding Enabled
+            foldGutter: true,
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+            // 2. Extra Keys for Autocomplete
+            extraKeys: {"Ctrl-Space": "autocomplete"} 
         });
 
         // --- LIVE PREVIEW & EVENTS ---
@@ -404,12 +603,88 @@
                 updateOutput();
                 saveCode();
                 saveStatus.textContent = "Saved";
-            }, 500); // 500ms delay
+            }, 500);
+        }
+
+        // --- CONSOLE LOGIC ---
+        // We inject this script into the iframe to capture logs
+        const consoleInterceptor = `
+            <script>
+            (function(){
+                var oldLog = console.log;
+                var oldWarn = console.warn;
+                var oldError = console.error;
+                var oldInfo = console.info;
+
+                function sendToParent(type, args) {
+                    var msg = args.map(arg => {
+                        try {
+                            return (typeof arg === 'object') ? JSON.stringify(arg) : String(arg);
+                        } catch(e) { return String(arg); }
+                    }).join(' ');
+                    
+                    window.parent.postMessage({
+                        source: 'iframe-console',
+                        type: type,
+                        message: msg,
+                        time: new Date().toLocaleTimeString()
+                    }, '*');
+                }
+
+                console.log = function(...args){ oldLog.apply(console, args); sendToParent('info', args); };
+                console.warn = function(...args){ oldWarn.apply(console, args); sendToParent('warn', args); };
+                console.error = function(...args){ oldError.apply(console, args); sendToParent('error', args); };
+                console.info = function(...args){ oldInfo.apply(console, args); sendToParent('info', args); };
+
+                window.onerror = function(msg, url, line) {
+                    sendToParent('error', ["Uncaught Error: " + msg + " (Line " + line + ")"]);
+                };
+            })();
+            <\/script>
+        `;
+
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.source === 'iframe-console') {
+                logToConsoleUI(event.data.type, event.data.message, event.data.time);
+            }
+        });
+
+        function logToConsoleUI(type, msg, time) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            let colorClass = 'log-info';
+            let icon = '<i class="fa-solid fa-info-circle"></i>';
+            
+            if (type === 'warn') { colorClass = 'log-warn'; icon = '<i class="fa-solid fa-triangle-exclamation"></i>'; }
+            if (type === 'error') { colorClass = 'log-error'; icon = '<i class="fa-solid fa-circle-xmark"></i>'; }
+            
+            entry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-type ${colorClass}">${icon}</span>
+                <span class="log-msg ${colorClass}">${msg.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span>
+            `;
+            consoleOutput.appendChild(entry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight; 
+        }
+
+        function clearConsole() {
+            consoleOutput.innerHTML = '<div class="text-gray-500 italic p-2">Console cleared.</div>';
+        }
+
+        function toggleConsole() {
+            consolePanel.classList.toggle('collapsed');
         }
 
         function updateOutput() {
             const html = editor.getValue();
-            const finalOutput = `<!DOCTYPE html><html><head><style>body{margin:0;}</style></head><body>${html}</body></html>`;
+            let finalOutput = html;
+            if (html.includes('<head>')) {
+                finalOutput = html.replace('<head>', '<head>' + consoleInterceptor);
+            } else {
+                finalOutput = consoleInterceptor + html;
+            }
+            
             const doc = outputFrame.contentWindow.document;
             doc.open();
             doc.write(finalOutput);
@@ -421,41 +696,98 @@
             charCount.textContent = len + " chars";
         }
 
+        // --- NEW FEATURES LOGIC ---
+
+        // 3. Libraries Manager
+        function toggleLibModal() {
+            document.getElementById('lib-modal').classList.toggle('show');
+        }
+        function insertLib(type) {
+            let tag = '';
+            if (type === 'bootstrap') tag = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">\n';
+            if (type === 'tailwind') tag = '<script src="https://cdn.tailwindcss.com"><\/script>\n';
+            if (type === 'jquery') tag = '<script src="https://code.jquery.com/jquery-3.7.0.min.js"><\/script>\n';
+            if (type === 'fontawesome') tag = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n';
+            
+            // Insert into <head> if exists, else top of file
+            let content = editor.getValue();
+            if (content.includes('</head>')) {
+                content = content.replace('</head>', tag + '</head>');
+            } else {
+                content = tag + content;
+            }
+            editor.setValue(content);
+            toggleLibModal();
+        }
+
+        // 4. Color Picker
+        function insertColor(hex) {
+            editor.replaceSelection(hex);
+        }
+
+        // 5. Resizable Split View
+        const resizer = document.getElementById('resizer');
+        const splitView = document.getElementById('split-view');
+        const editorPanel = document.getElementById('editor-panel');
+        const previewPanel = document.getElementById('preview-panel');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', () => {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleMouseMove);
+                // Refresh CodeMirror to fix sizing issues
+                editor.refresh();
+            });
+        });
+
+        function handleMouseMove(e) {
+            if (!isResizing) return;
+            const containerWidth = splitView.offsetWidth;
+            const newEditorWidth = (e.clientX / containerWidth) * 100;
+            
+            // Limit resizing (10% to 90%)
+            if (newEditorWidth > 10 && newEditorWidth < 90) {
+                editorPanel.style.flex = `0 0 ${newEditorWidth}%`;
+                previewPanel.style.flex = `0 0 ${100 - newEditorWidth}%`;
+            }
+        }
+
         // --- DEVICE PREVIEW MODE ---
         function setPreviewMode(mode) {
-            // Reset active class on buttons
             document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
-            
-            // Set styles based on mode
             if (mode === 'mobile') {
-                outputFrame.style.width = "375px"; // iPhone width
-                outputFrame.style.height = "100%"; // Full height
+                outputFrame.style.width = "375px";
                 event.currentTarget.classList.add('active');
             } else if (mode === 'tablet') {
-                outputFrame.style.width = "768px"; // iPad width
-                outputFrame.style.height = "100%";
+                outputFrame.style.width = "768px";
                 event.currentTarget.classList.add('active');
             } else {
                 outputFrame.style.width = "100%";
-                outputFrame.style.height = "100%";
                 event.currentTarget.classList.add('active');
             }
         }
 
-        // --- COPY FUNCTION ---
+        // --- UTILS ---
         function copyCode() {
             const code = editor.getValue();
             navigator.clipboard.writeText(code).then(() => {
                 const btn = document.querySelector('.fa-copy').parentElement;
-                const originalText = btn.innerHTML;
                 btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
                 setTimeout(() => {
-                    btn.innerHTML = originalText;
+                    btn.innerHTML = '<i class="fa-regular fa-copy mr-1"></i> Copy';
                 }, 2000);
             });
         }
+        
+        function oneClickDelete() {
+            editor.setValue("");
+            updateOutput();
+            clearConsole();
+        }
 
-        // --- THEME LOGIC ---
         function toggleTheme() {
             isDarkMode = !isDarkMode;
             const body = document.body;
@@ -475,7 +807,6 @@
             }
         }
 
-        // --- STORAGE ---
         function saveCode() {
             localStorage.setItem('proEditor_content', editor.getValue());
         }
@@ -489,7 +820,6 @@
             }
         }
 
-        // --- TOOLS ---
         function formatCode() {
             const rawCode = editor.getValue();
             const formatted = html_beautify(rawCode, {
@@ -503,13 +833,13 @@
         function insertSnippet(type) {
             let snippet = "";
             if (type === 'boilerplate') {
-                snippet = `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>My Project</title>\n    <style>\n        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f9ff; margin: 0; }\n        .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }\n        h1 { color: #0284c7; margin: 0 0 10px 0; }\n        p { color: #64748b; }\n    </style>\n</head>\n<body>\n    <div class="card">\n        <h1>🚀 Hello World!</h1>\n        <p>Edit this code to see changes instantly.</p>\n    </div>\n</body>\n</html>`;
+                snippet = `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>My Project</title>\n    <style>\n        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f9ff; margin: 0; }\n        .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }\n        h1 { color: #0284c7; margin: 0 0 10px 0; }\n        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; }\n        button:hover { background: #1d4ed8; }\n    </style>\n</head>\n<body>\n    <div class="card">\n        <h1>🚀 Console Test</h1>\n        <p>Open the Console panel below to see logs!</p>\n        <button onclick="testConsole()">Click Me</button>\n    </div>\n\n    <script>\n        console.log("Welcome to Pro Editor!");\n        \n        function testConsole() {\n            console.log("Button clicked at " + new Date().toLocaleTimeString());\n            console.warn("This is a warning message!");\n        }\n    <\/script>\n</body>\n</html>`;
+            } else if (type === 'js-test') {
+                snippet = `\n<script>\n  // Test the console\n  console.log("Hello from JavaScript!");\n  console.warn("Warning: Checking variables...");\n  console.error("Error: Something went wrong (Simulation)");\n<\/script>\n`;
             } else if (type === 'table') {
                 snippet = `\n<table border="1" style="width:100%; border-collapse:collapse; margin-top:20px;">\n  <tr style="background:#eee;">\n    <th style="padding:8px;">ID</th>\n    <th style="padding:8px;">Name</th>\n  </tr>\n  <tr>\n    <td style="padding:8px;">1</td>\n    <td style="padding:8px;">Alice</td>\n  </tr>\n</table>\n`;
             } else if (type === 'form') {
                 snippet = `\n<form style="display:flex; flex-direction:column; gap:10px; max-width:300px;">\n  <label>Name:</label>\n  <input type="text" placeholder="Enter name" style="padding:8px; border:1px solid #ccc; border-radius:4px;">\n  <button style="padding:8px; background:blue; color:white; border:none; border-radius:4px;">Submit</button>\n</form>\n`;
-            } else if (type === 'card') {
-                snippet = `\n<div style="border:1px solid #e2e8f0; padding:16px; border-radius:8px; background:white; width:250px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">\n  <h3 style="margin-top:0;">✨ Card Title</h3>\n  <p style="color:#64748b; font-size:0.9rem;">This is a beautiful card component snippet.</p>\n  <button style="width:100%; padding:6px; background:#3b82f6; color:white; border:none; border-radius:4px; margin-top:8px;">Action</button>\n</div>\n`;
             }
 
             if (editor.getValue().trim() === "") {
@@ -522,8 +852,7 @@
 
         function clearCode() {
             if(confirm("Clear current workspace?")) {
-                editor.setValue("");
-                updateOutput();
+                oneClickDelete();
             }
         }
 
