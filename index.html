@@ -2,25 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Vital for Mobile: prevents zooming issues when typing -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pro Live HTML Editor</title>
     
-    <!-- 1. Fonts: Poppins (UI) & Fira Code (Code) -->
+    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-    <!-- 2. Icons (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- 3. CodeMirror CSS & Addons -->
+    <!-- CodeMirror CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/eclipse.min.css">
     
-    <!-- Addon CSS: Folding, Dialog (Search), Hint -->
+    <!-- Addons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldgutter.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/show-hint.min.css">
 
     <!-- Tailwind CSS -->
@@ -28,29 +26,21 @@
 
     <style>
         :root {
-            /* Light Theme Variables */
-            --bg-app: #f8fafc;        /* Slate-50 */
-            --bg-sidebar: #ffffff;
+            --bg-app: #f8fafc;
             --bg-panel: #ffffff;
-            --border-color: #e2e8f0;  /* Slate-200 */
-            --text-primary: #334155;  /* Slate-700 */
-            --text-secondary: #64748b;/* Slate-500 */
-            --accent: #3b82f6;        /* Blue-500 */
-            --tab-active: #ffffff;
-            --tab-inactive: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-primary: #334155;
+            --accent: #3b82f6;
+            --header-h: 50px;
+            --mobile-tab-h: 50px;
         }
 
         body.dark-mode {
-            /* Dark Theme Variables (Slate Dark) */
-            --bg-app: #0f172a;        /* Slate-900 */
-            --bg-sidebar: #1e293b;    /* Slate-800 */
-            --bg-panel: #1e293b;      /* Slate-800 */
-            --border-color: #334155;  /* Slate-700 */
-            --text-primary: #f1f5f9;  /* Slate-100 */
-            --text-secondary: #94a3b8;/* Slate-400 */
-            --accent: #60a5fa;        /* Blue-400 */
-            --tab-active: #1e293b;
-            --tab-inactive: #0f172a;
+            --bg-app: #0f172a;
+            --bg-panel: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f1f5f9;
+            --accent: #60a5fa;
         }
 
         body {
@@ -63,307 +53,196 @@
             flex-direction: column;
         }
 
-        /* --- Header & Layout --- */
+        /* --- Header --- */
         .app-header {
-            height: 50px;
-            background-color: var(--bg-sidebar);
+            height: var(--header-h);
+            background-color: var(--bg-panel);
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 1rem;
+            padding: 0 10px;
+            z-index: 20;
         }
 
+        .logo-text { font-size: 1rem; font-weight: bold; }
+        .logo-pro { font-size: 0.7rem; opacity: 0.7; border: 1px solid currentColor; padding: 0 4px; border-radius: 4px; margin-left: 4px;}
+
+        /* --- Main Layout --- */
         .main-workspace {
             flex: 1;
             display: flex;
             overflow: hidden;
+            position: relative;
         }
 
-        /* --- Sidebar (Snippets) --- */
+        /* --- Sidebar (ToolBar) --- */
         .sidebar {
-            width: 60px;
-            background-color: var(--bg-sidebar);
+            width: 50px;
+            background-color: var(--bg-panel);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 1rem;
-            gap: 1rem;
+            padding-top: 10px;
+            gap: 10px;
             z-index: 10;
         }
 
         .sidebar-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-secondary);
+            color: var(--text-primary);
+            opacity: 0.7;
             cursor: pointer;
             transition: all 0.2s;
-            position: relative;
         }
-        .sidebar-btn:hover {
+        .sidebar-btn:hover, .sidebar-btn:active {
             background-color: rgba(59, 130, 246, 0.1);
             color: var(--accent);
-        }
-        /* Tooltip */
-        .sidebar-btn::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            left: 50px;
-            background: #333;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            z-index: 20;
-        }
-        .sidebar-btn:hover::after {
             opacity: 1;
         }
 
-        /* --- Editor & Preview Area --- */
+        /* --- Split Container --- */
         .split-container {
             flex: 1;
             display: flex;
-            padding: 0.5rem;
-            gap: 0; /* Gap removed for resizer */
             position: relative;
-        }
-        
-        @media (max-width: 768px) {
-            .split-container {
-                flex-direction: column;
-            }
-            .sidebar {
-                display: none; /* Hide sidebar on mobile for space */
-            }
+            overflow: hidden;
         }
 
         .panel-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            border-radius: 8px;
             overflow: hidden;
-            background-color: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            min-width: 200px; /* Minimum width for resizing */
+            background: var(--bg-panel);
         }
 
-        /* Resizer Handle */
+        /* Resizer (Desktop Only) */
         .resizer {
-            width: 8px;
-            background-color: transparent;
+            width: 6px;
+            background: var(--bg-app);
             cursor: col-resize;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
-            z-index: 20;
-        }
-        .resizer:hover {
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-        .resizer::after {
-            content: "";
-            width: 2px;
-            height: 20px;
-            background-color: var(--border-color);
-            border-radius: 1px;
+            z-index: 5;
         }
 
-        /* Tabs & Controls */
-        .panel-header {
-            height: 40px;
-            background-color: var(--tab-inactive);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center; /* Center items vertically */
-            justify-content: space-between; /* Space out items */
-            padding: 0 0.5rem;
-        }
-        
-        .tab {
-            padding: 0.25rem 0.75rem;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            background-color: transparent;
-            border-radius: 6px;
-            cursor: default;
-            display: flex;
-            align-items: center;
-        }
-        .tab.active {
-            color: var(--accent);
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-
-        /* View Controls */
-        .view-controls {
-            display: flex;
-            gap: 4px;
-            background-color: rgba(0,0,0,0.05);
-            padding: 2px;
-            border-radius: 6px;
-        }
-        .view-btn {
-            padding: 4px 8px;
-            font-size: 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            color: var(--text-secondary);
-            transition: all 0.2s;
-        }
-        .view-btn:hover {
-            color: var(--text-primary);
-        }
-        .view-btn.active {
-            background-color: var(--bg-panel);
-            color: var(--accent);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-
-        /* --- CodeMirror Customization --- */
+        /* --- Editor & Preview --- */
         .CodeMirror {
             height: 100%;
             font-family: 'Fira Code', monospace;
             font-size: 13px;
-            background-color: var(--bg-panel) !important;
-        }
-        /* Fix theme background conflict */
-        .cm-s-dracula.CodeMirror { background-color: #282a36 !important; }
-        .cm-s-eclipse.CodeMirror { background-color: #ffffff !important; }
-
-        /* CodeMirror Hints & Dialogs */
-        .CodeMirror-hints {
-            z-index: 100;
-            font-family: 'Fira Code', monospace;
-        }
-        
-        /* --- Footer --- */
-        .status-bar {
-            height: 24px;
-            background-color: var(--accent);
-            color: white;
-            font-size: 11px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 1rem;
-        }
-        
-        /* Iframe Container */
-        .preview-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            background-color: #e5e5e5;
-            overflow: hidden;
-        }
-        body.dark-mode .preview-wrapper {
-            background-color: #0f172a;
-        }
-
-        .iframe-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            overflow: auto;
-            padding: 0;
-            transition: height 0.3s;
+            line-height: 1.5;
         }
         
         #output-frame {
-            background-color: white;
-            transition: width 0.3s ease;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            width: 100%;
             height: 100%;
+            border: none;
+            background: white;
         }
 
-        /* --- Console Panel Styles --- */
-        #console-panel {
-            height: 150px;
-            background-color: #1e1e1e;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            font-family: 'Fira Code', monospace;
-            font-size: 12px;
-            transition: height 0.3s;
+        /* --- Mobile Optimizations --- */
+        @media (max-width: 768px) {
+            .app-header {
+                padding: 0 8px;
+            }
+            .logo-text span { display: none; } /* Hide 'Pro' text if tight */
+            .header-btn-text { display: none; } /* Hide button labels */
+            
+            /* Sidebar becomes Horizontal Scroll Bar on Top */
+            .sidebar {
+                width: 100%;
+                height: 45px;
+                flex-direction: row;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding: 0 10px;
+                overflow-x: auto;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            
+            .main-workspace {
+                flex-direction: column;
+            }
+            
+            .split-container {
+                flex-direction: column;
+            }
+            
+            /* Hide Resizer on Mobile */
+            .resizer { display: none; }
+            
+            /* Mobile Tabs Logic */
+            .panel-container {
+                display: none; /* Hidden by default */
+                height: 100%;
+                width: 100% !important; /* Force full width */
+                flex: none !important;
+            }
+            .panel-container.active {
+                display: flex;
+            }
+
+            /* Bottom Tab Bar */
+            .mobile-tab-bar {
+                height: var(--mobile-tab-h);
+                background: var(--bg-panel);
+                border-top: 1px solid var(--border-color);
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                flex-shrink: 0;
+                z-index: 50;
+            }
+            .m-tab-btn {
+                flex: 1;
+                text-align: center;
+                padding: 10px;
+                color: var(--text-primary);
+                font-size: 0.8rem;
+                opacity: 0.6;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+            }
+            .m-tab-btn.active {
+                color: var(--accent);
+                opacity: 1;
+                font-weight: 600;
+            }
+            .m-tab-btn i { font-size: 1.1rem; }
         }
-        #console-panel.collapsed {
-            height: 0;
-            overflow: hidden;
-            border-top: none;
+
+        @media (min-width: 769px) {
+            .mobile-tab-bar { display: none; }
+            .panel-container { display: flex !important; } /* Always show on desktop */
         }
-        
-        .console-header {
-            background-color: #2d2d2d;
-            color: #e0e0e0;
-            padding: 4px 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        #console-output {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-            color: #d4d4d4;
-        }
-        
-        .log-entry {
-            border-bottom: 1px solid #333;
-            padding: 2px 0;
-            display: flex;
-        }
-        .log-type { margin-right: 8px; font-weight: bold; }
-        .log-time { color: #666; margin-right: 8px; font-size: 10px; margin-top: 2px;}
-        
-        .log-info { color: #60a5fa; }
-        .log-warn { color: #facc15; }
-        .log-error { color: #f87171; }
-        .log-msg { white-space: pre-wrap; word-break: break-all; }
 
         /* Libraries Modal */
         #lib-modal {
+            display: none;
             position: fixed;
-            top: 60px;
-            right: 20px;
-            width: 250px;
+            top: 55px;
+            right: 10px;
+            width: 220px;
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            z-index: 50;
-            padding: 1rem;
-            display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 100;
+            padding: 10px;
         }
         #lib-modal.show { display: block; }
-        .lib-item {
-            display: flex;
-            align-items: center;
-            padding: 8px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .lib-item:hover { background-color: rgba(0,0,0,0.05); }
 
     </style>
 </head>
@@ -371,157 +250,120 @@
 
     <!-- 1. HEADER -->
     <nav class="app-header">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white">
                 <i class="fa-solid fa-code"></i>
             </div>
-            <span class="font-bold text-lg tracking-tight">DevEditor <span class="text-xs font-normal opacity-70 border border-gray-500 rounded px-1">PRO</span></span>
+            <div class="logo-text text-sm md:text-lg">Editor <span class="logo-pro text-[10px] md:text-xs">PRO</span></div>
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- Theme Toggle -->
-            <button onclick="toggleTheme()" class="w-8 h-8 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition" title="Toggle Theme">
-                <i id="theme-icon" class="fa-solid fa-sun text-yellow-400"></i>
+            <!-- Theme -->
+            <button onclick="toggleTheme()" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center" title="Theme">
+                <i id="theme-icon" class="fa-solid fa-sun text-yellow-500"></i>
             </button>
             
             <div class="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
-            <!-- Library Button -->
-            <button onclick="toggleLibModal()" class="text-xs font-medium px-3 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2" title="Add External Libraries">
-                <i class="fa-solid fa-layer-group text-purple-400"></i> Libs
+            <!-- Library -->
+            <button onclick="toggleLibModal()" class="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded text-xs font-medium flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-purple-500"></i> <span class="header-btn-text">Libs</span>
             </button>
             
-            <!-- Color Picker -->
+            <!-- Color -->
             <div class="relative">
-                <input type="color" id="color-picker" onchange="insertColor(this.value)" class="absolute opacity-0 w-full h-full cursor-pointer">
-                <button class="text-xs font-medium px-3 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2" title="Pick Color">
-                    <i class="fa-solid fa-palette text-pink-400"></i> Color
+                <input type="color" onchange="insertColor(this.value)" class="absolute opacity-0 w-full h-full">
+                <button class="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded text-xs font-medium flex items-center gap-2">
+                    <i class="fa-solid fa-palette text-pink-500"></i> <span class="header-btn-text">Color</span>
                 </button>
             </div>
 
-            <!-- Delete Button -->
-            <button onclick="oneClickDelete()" class="text-xs font-medium px-3 py-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 transition flex items-center gap-2" title="Instant Delete">
-                <i class="fa-solid fa-trash-can"></i> Clear
+            <!-- Clear -->
+            <button onclick="oneClickDelete()" class="bg-red-50 dark:bg-red-900/30 text-red-500 px-3 py-1.5 rounded text-xs font-medium flex items-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> <span class="header-btn-text">Clear</span>
             </button>
 
-            <!-- Format Button -->
-            <button onclick="formatCode()" class="text-xs font-medium px-3 py-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2" title="Format Code">
-                <i class="fa-solid fa-wand-magic-sparkles text-yellow-500"></i> Format
-            </button>
-            
-            <button onclick="downloadCode()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-1.5 rounded transition shadow-sm" title="Download HTML">
-                Download
+             <!-- Download -->
+             <button onclick="downloadCode()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-medium flex items-center gap-2 shadow">
+                <i class="fa-solid fa-download"></i> <span class="header-btn-text">Save</span>
             </button>
         </div>
     </nav>
 
-    <!-- Libraries Modal -->
+    <!-- Lib Modal -->
     <div id="lib-modal">
-        <h3 class="text-sm font-bold mb-2">Add Library</h3>
-        <div class="lib-item" onclick="insertLib('bootstrap')">
-            <i class="fa-brands fa-bootstrap text-purple-600 mr-2"></i> Bootstrap 5
+        <div class="text-xs font-bold mb-2 uppercase opacity-50">Quick Add</div>
+        <div onclick="insertLib('bootstrap')" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center gap-2 text-sm">
+            <i class="fa-brands fa-bootstrap text-purple-600"></i> Bootstrap 5
         </div>
-        <div class="lib-item" onclick="insertLib('tailwind')">
-            <i class="fa-solid fa-wind text-blue-400 mr-2"></i> Tailwind CSS
+        <div onclick="insertLib('tailwind')" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center gap-2 text-sm">
+            <i class="fa-solid fa-wind text-blue-400"></i> Tailwind CSS
         </div>
-        <div class="lib-item" onclick="insertLib('jquery')">
-            <i class="fa-solid fa-dollar-sign text-blue-600 mr-2"></i> jQuery
-        </div>
-        <div class="lib-item" onclick="insertLib('fontawesome')">
-            <i class="fa-regular fa-flag text-orange-500 mr-2"></i> FontAwesome
+        <div onclick="insertLib('fontawesome')" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center gap-2 text-sm">
+            <i class="fa-regular fa-flag text-orange-500"></i> FontAwesome
         </div>
     </div>
 
-    <!-- 2. WORKSPACE -->
+    <!-- 2. MAIN WORKSPACE -->
     <div class="main-workspace">
         
-        <!-- LEFT SIDEBAR (Snippets) -->
+        <!-- TOOLBAR (Sidebar on desktop, Top bar on mobile) -->
         <aside class="sidebar">
-            <div class="sidebar-btn" onclick="insertSnippet('boilerplate')" data-tooltip="HTML5 Boilerplate">
-                <i class="fa-brands fa-html5 text-xl"></i>
+            <div class="sidebar-btn" onclick="insertSnippet('boilerplate')" title="HTML Boilerplate">
+                <i class="fa-brands fa-html5 text-lg"></i>
             </div>
-            <div class="sidebar-btn" onclick="insertSnippet('table')" data-tooltip="Insert Table">
-                <i class="fa-solid fa-table text-lg"></i>
+            <div class="sidebar-btn" onclick="insertSnippet('navbar')" title="Navbar">
+                <i class="fa-solid fa-compass text-lg"></i>
             </div>
-            <div class="sidebar-btn" onclick="insertSnippet('form')" data-tooltip="Insert Form">
+            <div class="sidebar-btn" onclick="insertSnippet('grid')" title="Grid">
+                <i class="fa-solid fa-border-all text-lg"></i>
+            </div>
+            <div class="sidebar-btn" onclick="insertSnippet('button')" title="Buttons">
+                <i class="fa-solid fa-square-check text-lg"></i>
+            </div>
+            <div class="sidebar-btn" onclick="insertSnippet('form')" title="Form">
                 <i class="fa-solid fa-align-justify text-lg"></i>
             </div>
-            <div class="sidebar-btn" onclick="insertSnippet('js-test')" data-tooltip="JS Console Test">
-                <i class="fa-brands fa-js text-xl text-yellow-400"></i>
+            <div class="sidebar-btn" onclick="insertSnippet('table')" title="Table">
+                <i class="fa-solid fa-table text-lg"></i>
             </div>
-            <div class="flex-1"></div>
-            <div class="sidebar-btn text-red-500 hover:text-red-600" onclick="clearCode()" data-tooltip="Reset All">
-                <i class="fa-solid fa-trash"></i>
+            <div class="sidebar-btn" onclick="formatCode()" title="Format Code">
+                <i class="fa-solid fa-wand-magic-sparkles text-yellow-500 text-lg"></i>
             </div>
         </aside>
 
-        <!-- MAIN SPLIT VIEW -->
+        <!-- CONTENT AREA -->
         <main class="split-container" id="split-view">
             
-            <!-- EDITOR PANE -->
-            <div class="panel-container" id="editor-panel" style="flex: 1;">
-                <div class="panel-header">
-                    <div class="tab active">
-                        <i class="fa-solid fa-file-code mr-2 text-blue-500"></i>index.html
-                    </div>
-                    <div class="flex items-center gap-2">
-                         <span class="text-[10px] text-gray-500 mr-2 hidden md:block">Ctrl+F to Search | Ctrl+Space for Hints</span>
-                        <button onclick="copyCode()" class="text-xs text-gray-500 hover:text-blue-500 transition px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <i class="fa-regular fa-copy mr-1"></i> Copy
-                        </button>
-                    </div>
-                </div>
-                <div class="flex-1 relative">
+            <!-- CODE PANEL -->
+            <div class="panel-container active" id="editor-panel">
+                <div class="h-full relative">
                     <textarea id="code-editor"></textarea>
                 </div>
             </div>
 
-            <!-- RESIZER HANDLE -->
+            <!-- RESIZER (Desktop) -->
             <div class="resizer" id="resizer"></div>
 
-            <!-- PREVIEW PANE -->
-            <div class="panel-container" id="preview-panel" style="flex: 1;">
-                <div class="panel-header">
-                    <div class="flex items-center gap-2">
-                        <div class="tab active">
-                            <i class="fa-brands fa-chrome mr-2 text-green-500"></i>Preview
-                        </div>
-                        <button onclick="toggleConsole()" class="text-xs font-bold px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition ml-2" title="Toggle JS Console">
-                            <i class="fa-solid fa-terminal mr-1"></i> Console
-                        </button>
-                    </div>
-                    
-                    <div class="view-controls">
-                        <div class="view-btn" onclick="setPreviewMode('mobile')" title="Mobile View">
-                            <i class="fa-solid fa-mobile-screen"></i>
-                        </div>
-                        <div class="view-btn" onclick="setPreviewMode('tablet')" title="Tablet View">
-                            <i class="fa-solid fa-tablet-screen-button"></i>
-                        </div>
-                        <div class="view-btn active" onclick="setPreviewMode('desktop')" title="Desktop View">
-                            <i class="fa-solid fa-desktop"></i>
-                        </div>
-                    </div>
+            <!-- PREVIEW PANEL -->
+            <div class="panel-container" id="preview-panel">
+                <div class="bg-gray-100 dark:bg-gray-800 p-1 flex justify-between items-center text-xs border-b border-gray-300 dark:border-gray-700">
+                    <span class="font-bold px-2"><i class="fa-brands fa-chrome mr-1"></i> Preview</span>
+                    <button onclick="toggleConsole()" class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:opacity-80">Console</button>
                 </div>
-                
-                <div class="preview-wrapper">
-                    <!-- Iframe Wrapper -->
-                    <div class="iframe-container">
-                        <iframe id="output-frame" class="w-full border-none"></iframe>
-                    </div>
+                <div class="flex-1 relative bg-white">
+                    <iframe id="output-frame"></iframe>
                     
-                    <!-- Console Panel -->
-                    <div id="console-panel" class="">
-                        <div class="console-header">
-                            <span><i class="fa-solid fa-terminal mr-2"></i> JS Console Output</span>
+                    <!-- Console Overlay -->
+                    <div id="console-panel" class="absolute bottom-0 left-0 w-full bg-gray-900 text-gray-300 text-xs font-mono flex flex-col transition-all duration-300" style="height: 0; overflow: hidden;">
+                        <div class="bg-gray-800 p-1 flex justify-between items-center border-b border-gray-700">
+                            <span class="px-2">JS Console</span>
                             <div class="flex gap-2">
-                                <button onclick="clearConsole()" class="hover:text-white text-gray-400"><i class="fa-solid fa-ban"></i> Clear</button>
-                                <button onclick="toggleConsole()" class="hover:text-white text-gray-400"><i class="fa-solid fa-xmark"></i></button>
+                                <i onclick="document.getElementById('console-output').innerHTML=''" class="fa-solid fa-ban cursor-pointer hover:text-white p-1"></i>
+                                <i onclick="toggleConsole()" class="fa-solid fa-xmark cursor-pointer hover:text-white p-1"></i>
                             </div>
                         </div>
-                        <div id="console-output">
-                            <div class="text-gray-500 italic p-2">Console ready... logs will appear here.</div>
-                        </div>
+                        <div id="console-output" class="flex-1 overflow-y-auto p-2"></div>
                     </div>
                 </div>
             </div>
@@ -529,17 +371,17 @@
         </main>
     </div>
 
-    <!-- 3. STATUS BAR -->
-    <footer class="status-bar">
-        <div class="flex gap-4">
-            <span><i class="fa-solid fa-code-branch mr-1"></i> main</span>
-            <span id="char-count">0 chars</span>
+    <!-- 3. MOBILE TAB BAR (Only visible on mobile) -->
+    <div class="mobile-tab-bar">
+        <div class="m-tab-btn active" onclick="switchMobileTab('editor', this)">
+            <i class="fa-solid fa-code"></i>
+            <span>Code</span>
         </div>
-        <div>
-            <span id="save-status" class="mr-3 opacity-70">Saved</span>
-            <span>HTML5 + JS</span>
+        <div class="m-tab-btn" onclick="switchMobileTab('preview', this)">
+            <i class="fa-solid fa-eye"></i>
+            <span>Preview</span>
         </div>
-    </footer>
+    </div>
 
     <!-- SCRIPTS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
@@ -548,350 +390,189 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify-html.min.js"></script>
-
-    <!-- CodeMirror Addon Scripts: Folding, Search, Hints -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/foldgutter.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/brace-fold.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/fold/xml-fold.min.js"></script>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/search.min.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/show-hint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/xml-hint.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/hint/html-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify-html.min.js"></script>
 
     <script>
-        // --- CONFIG ---
-        const outputFrame = document.getElementById('output-frame');
-        const themeIcon = document.getElementById('theme-icon');
-        const charCount = document.getElementById('char-count');
-        const saveStatus = document.getElementById('save-status');
-        const consoleOutput = document.getElementById('console-output');
-        const consolePanel = document.getElementById('console-panel');
-        let isDarkMode = true;
-
-        // --- EDITOR INIT ---
+        // Init Editor
         const editor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
             mode: "htmlmixed",
             theme: "dracula",
             lineNumbers: true,
             autoCloseTags: true,
             lineWrapping: true,
-            indentUnit: 4,
-            // 1. Code Folding Enabled
             foldGutter: true,
             gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
-            // 2. Extra Keys for Autocomplete
             extraKeys: {"Ctrl-Space": "autocomplete"} 
         });
 
-        // --- LIVE PREVIEW & EVENTS ---
-        editor.on("change", () => {
-            saveStatus.textContent = "Typing...";
-            debouncedUpdate();
-            updateStats();
-        });
+        // Mobile Tab Logic
+        function switchMobileTab(tab, btn) {
+            document.querySelectorAll('.m-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
 
+            const editorPanel = document.getElementById('editor-panel');
+            const previewPanel = document.getElementById('preview-panel');
+
+            if (tab === 'editor') {
+                editorPanel.classList.add('active');
+                previewPanel.classList.remove('active');
+                editor.refresh(); // Important for rendering
+            } else {
+                editorPanel.classList.remove('active');
+                previewPanel.classList.add('active');
+                // Force update on switch to ensure latest code
+                updateOutput();
+            }
+        }
+
+        // Live Update
+        const outputFrame = document.getElementById('output-frame');
         let debounceTimer;
-        function debouncedUpdate() {
+        
+        editor.on("change", () => {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 updateOutput();
                 saveCode();
-                saveStatus.textContent = "Saved";
             }, 500);
-        }
-
-        // --- CONSOLE LOGIC ---
-        // We inject this script into the iframe to capture logs
-        const consoleInterceptor = `
-            <script>
-            (function(){
-                var oldLog = console.log;
-                var oldWarn = console.warn;
-                var oldError = console.error;
-                var oldInfo = console.info;
-
-                function sendToParent(type, args) {
-                    var msg = args.map(arg => {
-                        try {
-                            return (typeof arg === 'object') ? JSON.stringify(arg) : String(arg);
-                        } catch(e) { return String(arg); }
-                    }).join(' ');
-                    
-                    window.parent.postMessage({
-                        source: 'iframe-console',
-                        type: type,
-                        message: msg,
-                        time: new Date().toLocaleTimeString()
-                    }, '*');
-                }
-
-                console.log = function(...args){ oldLog.apply(console, args); sendToParent('info', args); };
-                console.warn = function(...args){ oldWarn.apply(console, args); sendToParent('warn', args); };
-                console.error = function(...args){ oldError.apply(console, args); sendToParent('error', args); };
-                console.info = function(...args){ oldInfo.apply(console, args); sendToParent('info', args); };
-
-                window.onerror = function(msg, url, line) {
-                    sendToParent('error', ["Uncaught Error: " + msg + " (Line " + line + ")"]);
-                };
-            })();
-            <\/script>
-        `;
-
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.source === 'iframe-console') {
-                logToConsoleUI(event.data.type, event.data.message, event.data.time);
-            }
         });
 
-        function logToConsoleUI(type, msg, time) {
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            
-            let colorClass = 'log-info';
-            let icon = '<i class="fa-solid fa-info-circle"></i>';
-            
-            if (type === 'warn') { colorClass = 'log-warn'; icon = '<i class="fa-solid fa-triangle-exclamation"></i>'; }
-            if (type === 'error') { colorClass = 'log-error'; icon = '<i class="fa-solid fa-circle-xmark"></i>'; }
-            
-            entry.innerHTML = `
-                <span class="log-time">[${time}]</span>
-                <span class="log-type ${colorClass}">${icon}</span>
-                <span class="log-msg ${colorClass}">${msg.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span>
-            `;
-            consoleOutput.appendChild(entry);
-            consoleOutput.scrollTop = consoleOutput.scrollHeight; 
-        }
+        // Output Logic with Console
+        const consoleScript = `
+        <script>
+        (function(){
+            var oldLog=console.log, oldWarn=console.warn, oldErr=console.error;
+            function send(type, args) {
+                var msg = args.map(a => {
+                    try { return typeof a==='object'?JSON.stringify(a):String(a); } catch(e){ return String(a); }
+                }).join(' ');
+                window.parent.postMessage({src:'frm', type:type, msg:msg}, '*');
+            }
+            console.log=function(...a){oldLog.apply(console,a);send('info',a)};
+            console.warn=function(...a){oldWarn.apply(console,a);send('warn',a)};
+            console.error=function(...a){oldErr.apply(console,a);send('error',a)};
+            window.onerror=function(m,u,l){send('error',['Uncaught: '+m+' (L'+l+')'])};
+        })();
+        <\/script>`;
 
-        function clearConsole() {
-            consoleOutput.innerHTML = '<div class="text-gray-500 italic p-2">Console cleared.</div>';
-        }
-
-        function toggleConsole() {
-            consolePanel.classList.toggle('collapsed');
-        }
-
-        // --- UPDATED SMART OUTPUT INJECTION ---
         function updateOutput() {
             const html = editor.getValue();
-            let finalOutput = html;
+            let final = html;
+            // Inject script safely
+            if (html.toLowerCase().includes('</body>')) final = html.replace(/<\/body>/i, consoleScript + '</body>');
+            else final = html + consoleScript;
 
-            // Prepare the console interceptor script
-            const script = consoleInterceptor; 
-
-            // Smart Injection to avoid breaking Doctype (Quirks Mode)
-            // This ensures libraries like Bootstrap/Tailwind work correctly
-            const lowerHtml = html.toLowerCase();
-            
-            if (lowerHtml.includes('<head>')) {
-                // Inject at start of head
-                finalOutput = html.replace(/<head>/i, '<head>' + script);
-            } else if (lowerHtml.includes('<body>')) {
-                // Inject at start of body
-                finalOutput = html.replace(/<body>/i, '<body>' + script);
-            } else if (lowerHtml.includes('<html')) {
-                // Find the end of the opening <html> tag and inject after it
-                const htmlTagEnd = lowerHtml.indexOf('>', lowerHtml.indexOf('<html')) + 1;
-                finalOutput = html.substring(0, htmlTagEnd) + script + html.substring(htmlTagEnd);
-            } else if (lowerHtml.includes('<!doctype')) {
-                // If only doctype is present, assume implicit html/head/body structure.
-                // It is unsafe to put script BEFORE doctype, so we append it or use simple concatenation if no structure exists.
-                // Best bet for a clean snippet:
-                finalOutput = html + script;
-            } else {
-                // No structure (just a snippet like <h1>Hi</h1>), prepend script
-                finalOutput = script + html;
-            }
-            
             const doc = outputFrame.contentWindow.document;
             doc.open();
-            doc.write(finalOutput);
+            doc.write(final);
             doc.close();
         }
 
-        function updateStats() {
-            const len = editor.getValue().length;
-            charCount.textContent = len + " chars";
+        // Console UI Listener
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.src === 'frm') {
+                const div = document.createElement('div');
+                div.className = 'border-b border-gray-700 py-1 ' + 
+                    (e.data.type === 'error' ? 'text-red-400' : 
+                     e.data.type === 'warn' ? 'text-yellow-400' : 'text-blue-300');
+                div.innerText = `> ${e.data.msg}`;
+                const out = document.getElementById('console-output');
+                out.appendChild(div);
+                out.scrollTop = out.scrollHeight;
+            }
+        });
+
+        function toggleConsole() {
+            const p = document.getElementById('console-panel');
+            p.style.height = p.style.height === '0px' || p.style.height === '' ? '150px' : '0';
         }
 
-        // --- UPDATED LIBRARIES MANAGER (Case Insensitive) ---
-        function toggleLibModal() {
-            document.getElementById('lib-modal').classList.toggle('show');
+        // Storage & Utils
+        function saveCode() { localStorage.setItem('pro_mobile_editor', editor.getValue()); }
+        function loadCode() { 
+            const s = localStorage.getItem('pro_mobile_editor');
+            if (s) editor.setValue(s);
+            else insertSnippet('boilerplate');
         }
+
+        function toggleLibModal() { document.getElementById('lib-modal').classList.toggle('show'); }
+        
         function insertLib(type) {
             let tag = '';
-            if (type === 'bootstrap') tag = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">\n';
-            if (type === 'tailwind') tag = '<script src="https://cdn.tailwindcss.com"><\/script>\n';
-            if (type === 'jquery') tag = '<script src="https://code.jquery.com/jquery-3.7.0.min.js"><\/script>\n';
-            if (type === 'fontawesome') tag = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n';
+            if (type === 'bootstrap') tag = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
+            if (type === 'tailwind') tag = '<script src="https://cdn.tailwindcss.com"><\/script>';
+            if (type === 'fontawesome') tag = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">';
             
-            let content = editor.getValue();
-            
-            // Case insensitive check for closing head tag
-            if (/<\/head>/i.test(content)) {
-                content = content.replace(/<\/head>/i, tag + '</head>');
-            } else {
-                // If no head tag, prepend to content (will be valid HTML5)
-                content = tag + content;
-            }
-            editor.setValue(content);
+            let val = editor.getValue();
+            editor.setValue(val.includes('</head>') ? val.replace('</head>', tag + '\n</head>') : tag + '\n' + val);
             toggleLibModal();
         }
 
-        // 4. Color Picker
-        function insertColor(hex) {
-            editor.replaceSelection(hex);
+        function insertColor(hex) { editor.replaceSelection(hex); }
+        function oneClickDelete() { editor.setValue(''); }
+        function formatCode() {
+            editor.setValue(html_beautify(editor.getValue(), { indent_size: 4 }));
         }
-
-        // 5. Resizable Split View
-        const resizer = document.getElementById('resizer');
-        const splitView = document.getElementById('split-view');
-        const editorPanel = document.getElementById('editor-panel');
-        const previewPanel = document.getElementById('preview-panel');
-        let isResizing = false;
-
-        resizer.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', () => {
-                isResizing = false;
-                document.removeEventListener('mousemove', handleMouseMove);
-                // Refresh CodeMirror to fix sizing issues
-                editor.refresh();
-            });
-        });
-
-        function handleMouseMove(e) {
-            if (!isResizing) return;
-            const containerWidth = splitView.offsetWidth;
-            const newEditorWidth = (e.clientX / containerWidth) * 100;
-            
-            // Limit resizing (10% to 90%)
-            if (newEditorWidth > 10 && newEditorWidth < 90) {
-                editorPanel.style.flex = `0 0 ${newEditorWidth}%`;
-                previewPanel.style.flex = `0 0 ${100 - newEditorWidth}%`;
-            }
-        }
-
-        // --- DEVICE PREVIEW MODE ---
-        function setPreviewMode(mode) {
-            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
-            if (mode === 'mobile') {
-                outputFrame.style.width = "375px";
-                event.currentTarget.classList.add('active');
-            } else if (mode === 'tablet') {
-                outputFrame.style.width = "768px";
-                event.currentTarget.classList.add('active');
-            } else {
-                outputFrame.style.width = "100%";
-                event.currentTarget.classList.add('active');
-            }
-        }
-
-        // --- UTILS ---
-        function copyCode() {
-            const code = editor.getValue();
-            navigator.clipboard.writeText(code).then(() => {
-                const btn = document.querySelector('.fa-copy').parentElement;
-                btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="fa-regular fa-copy mr-1"></i> Copy';
-                }, 2000);
-            });
-        }
-        
-        function oneClickDelete() {
-            editor.setValue("");
-            updateOutput();
-            clearConsole();
+        function downloadCode() {
+            const blob = new Blob([editor.getValue()], {type: 'text/html'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'index.html';
+            a.click();
         }
 
         function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            const body = document.body;
-
-            if (isDarkMode) {
-                body.classList.remove('light-mode');
-                body.classList.add('dark-mode');
-                editor.setOption("theme", "dracula");
-                themeIcon.classList.replace('fa-moon', 'fa-sun');
-                themeIcon.classList.replace('text-indigo-500', 'text-yellow-400');
-            } else {
-                body.classList.remove('dark-mode');
-                body.classList.add('light-mode');
-                editor.setOption("theme", "eclipse");
-                themeIcon.classList.replace('fa-sun', 'fa-moon');
-                themeIcon.classList.replace('text-yellow-400', 'text-indigo-500');
-            }
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            editor.setOption('theme', isDark ? 'dracula' : 'eclipse');
+            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun text-yellow-500' : 'fa-solid fa-moon text-gray-500';
         }
 
-        function saveCode() {
-            localStorage.setItem('proEditor_content', editor.getValue());
-        }
-
-        function loadCode() {
-            const saved = localStorage.getItem('proEditor_content');
-            if (saved) {
-                editor.setValue(saved);
-            } else {
-                insertSnippet('boilerplate'); 
-            }
-        }
-
-        function formatCode() {
-            const rawCode = editor.getValue();
-            const formatted = html_beautify(rawCode, {
-                indent_size: 4,
-                wrap_line_length: 80,
-                preserve_newlines: true
-            });
-            editor.setValue(formatted);
-        }
-
+        // Snippets
         function insertSnippet(type) {
-            let snippet = "";
-            if (type === 'boilerplate') {
-                snippet = `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>My Project</title>\n    <style>\n        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f9ff; margin: 0; }\n        .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }\n        h1 { color: #0284c7; margin: 0 0 10px 0; }\n        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; }\n        button:hover { background: #1d4ed8; }\n    </style>\n</head>\n<body>\n    <div class="card">\n        <h1>🚀 Console Test</h1>\n        <p>Open the Console panel below to see logs!</p>\n        <button onclick="testConsole()">Click Me</button>\n    </div>\n\n    <script>\n        console.log("Welcome to Pro Editor!");\n        \n        function testConsole() {\n            console.log("Button clicked at " + new Date().toLocaleTimeString());\n            console.warn("This is a warning message!");\n        }\n    <\/script>\n</body>\n</html>`;
-            } else if (type === 'js-test') {
-                snippet = `\n<script>\n  // Test the console\n  console.log("Hello from JavaScript!");\n  console.warn("Warning: Checking variables...");\n  console.error("Error: Something went wrong (Simulation)");\n<\/script>\n`;
-            } else if (type === 'table') {
-                snippet = `\n<table border="1" style="width:100%; border-collapse:collapse; margin-top:20px;">\n  <tr style="background:#eee;">\n    <th style="padding:8px;">ID</th>\n    <th style="padding:8px;">Name</th>\n  </tr>\n  <tr>\n    <td style="padding:8px;">1</td>\n    <td style="padding:8px;">Alice</td>\n  </tr>\n</table>\n`;
-            } else if (type === 'form') {
-                snippet = `\n<form style="display:flex; flex-direction:column; gap:10px; max-width:300px;">\n  <label>Name:</label>\n  <input type="text" placeholder="Enter name" style="padding:8px; border:1px solid #ccc; border-radius:4px;">\n  <button style="padding:8px; background:blue; color:white; border:none; border-radius:4px;">Submit</button>\n</form>\n`;
-            }
-
-            if (editor.getValue().trim() === "") {
-                editor.setValue(snippet);
-            } else {
-                editor.replaceSelection(snippet);
-            }
-            formatCode();
+            const snippets = {
+                boilerplate: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>App</title>\n  <style>\n    body { font-family: sans-serif; padding: 20px; }\n  </style>\n</head>\n<body>\n  <h1>Hello Mobile!</h1>\n</body>\n</html>`,
+                navbar: `<nav style="background:#333; color:#fff; padding:10px;">\n  <strong>Brand</strong>\n  <span style="float:right">Link 1 | Link 2</span>\n</nav>`,
+                grid: `<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">\n  <div style="background:#eee; p:10px;">Box 1</div>\n  <div style="background:#eee; p:10px;">Box 2</div>\n</div>`,
+                button: `<button style="background:blue; color:white; border:none; padding:8px 16px; border-radius:4px;">Click Me</button>`,
+                form: `<input type="text" placeholder="Name" style="border:1px solid #ccc; padding:5px;">\n<button>Send</button>`,
+                table: `<table border="1" width="100%">\n  <tr><th>A</th><th>B</th></tr>\n  <tr><td>1</td><td>2</td></tr>\n</table>`
+            };
+            const val = snippets[type] || '';
+            if (editor.getValue().trim() === '') editor.setValue(val);
+            else editor.replaceSelection(val);
         }
 
-        function clearCode() {
-            if(confirm("Clear current workspace?")) {
-                oneClickDelete();
+        // Resizer Logic (Desktop)
+        const resizer = document.getElementById('resizer');
+        const editorPanel = document.getElementById('editor-panel');
+        const previewPanel = document.getElementById('preview-panel');
+        const splitView = document.getElementById('split-view');
+        
+        let isResizing = false;
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', () => { isResizing=false; document.removeEventListener('mousemove', onMouseMove); });
+        });
+        function onMouseMove(e) {
+            if(!isResizing) return;
+            const w = (e.clientX / splitView.offsetWidth) * 100;
+            if(w > 10 && w < 90) {
+                editorPanel.style.flex = `0 0 ${w}%`;
+                previewPanel.style.flex = `0 0 ${100-w}%`;
             }
         }
 
-        function downloadCode() {
-            const blob = new Blob([editor.getValue()], { type: 'text/html' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'index.html';
-            link.click();
-        }
-
-        window.onload = () => {
-            loadCode();
-            updateOutput();
-            updateStats();
-        };
+        window.onload = () => { loadCode(); updateOutput(); };
     </script>
 </body>
 </html>
+
