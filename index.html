@@ -676,13 +676,36 @@
             consolePanel.classList.toggle('collapsed');
         }
 
+        // --- UPDATED SMART OUTPUT INJECTION ---
         function updateOutput() {
             const html = editor.getValue();
             let finalOutput = html;
-            if (html.includes('<head>')) {
-                finalOutput = html.replace('<head>', '<head>' + consoleInterceptor);
+
+            // Prepare the console interceptor script
+            const script = consoleInterceptor; 
+
+            // Smart Injection to avoid breaking Doctype (Quirks Mode)
+            // This ensures libraries like Bootstrap/Tailwind work correctly
+            const lowerHtml = html.toLowerCase();
+            
+            if (lowerHtml.includes('<head>')) {
+                // Inject at start of head
+                finalOutput = html.replace(/<head>/i, '<head>' + script);
+            } else if (lowerHtml.includes('<body>')) {
+                // Inject at start of body
+                finalOutput = html.replace(/<body>/i, '<body>' + script);
+            } else if (lowerHtml.includes('<html')) {
+                // Find the end of the opening <html> tag and inject after it
+                const htmlTagEnd = lowerHtml.indexOf('>', lowerHtml.indexOf('<html')) + 1;
+                finalOutput = html.substring(0, htmlTagEnd) + script + html.substring(htmlTagEnd);
+            } else if (lowerHtml.includes('<!doctype')) {
+                // If only doctype is present, assume implicit html/head/body structure.
+                // It is unsafe to put script BEFORE doctype, so we append it or use simple concatenation if no structure exists.
+                // Best bet for a clean snippet:
+                finalOutput = html + script;
             } else {
-                finalOutput = consoleInterceptor + html;
+                // No structure (just a snippet like <h1>Hi</h1>), prepend script
+                finalOutput = script + html;
             }
             
             const doc = outputFrame.contentWindow.document;
@@ -696,9 +719,7 @@
             charCount.textContent = len + " chars";
         }
 
-        // --- NEW FEATURES LOGIC ---
-
-        // 3. Libraries Manager
+        // --- UPDATED LIBRARIES MANAGER (Case Insensitive) ---
         function toggleLibModal() {
             document.getElementById('lib-modal').classList.toggle('show');
         }
@@ -709,11 +730,13 @@
             if (type === 'jquery') tag = '<script src="https://code.jquery.com/jquery-3.7.0.min.js"><\/script>\n';
             if (type === 'fontawesome') tag = '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n';
             
-            // Insert into <head> if exists, else top of file
             let content = editor.getValue();
-            if (content.includes('</head>')) {
-                content = content.replace('</head>', tag + '</head>');
+            
+            // Case insensitive check for closing head tag
+            if (/<\/head>/i.test(content)) {
+                content = content.replace(/<\/head>/i, tag + '</head>');
             } else {
+                // If no head tag, prepend to content (will be valid HTML5)
                 content = tag + content;
             }
             editor.setValue(content);
