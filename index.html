@@ -134,30 +134,6 @@
             background-color: #bfdbfe; 
             color: #1e40af; 
         }
-
-        /* Share Link Modal */
-        .share-modal {
-            background-color: white;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            z-index: 10000;
-        }
-        .share-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
     </style>
 </head>
 <body class="h-screen flex flex-col p-2 md:p-4 bg-blue-50">
@@ -169,11 +145,7 @@
         </div>
 
         <div class="flex flex-wrap justify-center gap-2">
-            <!-- New: Share Button -->
-            <button onclick="saveCodeAndShare();" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg shadow-sm transition" title="Save and Share Code">
-                <i class="fa-solid fa-share-alt mr-1"></i> பகிரவும் & சேமிக்கவும்
-            </button>
-
+            <!-- Share/Save button removed -->
             <button onclick="downloadCode();" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition" title="Download">
                 <i class="fa-solid fa-download mr-1"></i> பதிவிறக்கம்
             </button>
@@ -247,37 +219,9 @@
         செயல் வெற்றிகரமாக முடிந்தது!
     </div>
 
-    <!-- Share Modal (Hidden by default) -->
-    <div id="share-modal" class="share-backdrop hidden">
-        <div class="share-modal">
-            <h3 class="text-xl font-bold text-blue-700 mb-4">கோடு வெற்றிகரமாக சேமிக்கப்பட்டது!</h3>
-            <p class="text-gray-600 mb-3">இந்த இணைப்பை மற்றவர்களுடன் பகிரவும்:</p>
-            <input type="text" id="share-link-input" readonly class="w-full p-2 border border-blue-300 bg-blue-50 rounded-lg text-sm mb-4">
-            <button onclick="copyShareLink()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition mr-2">
-                <i class="fa-regular fa-copy mr-1"></i> இணைப்பை நகலெடுக்கவும்
-            </button>
-            <button onclick="closeShareModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition">
-                மூடவும்
-            </button>
-        </div>
-    </div>
 
-
-    <script type="module">
-        // Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global Firebase Variables
-        let db;
-        let auth;
-        let isAuthReady = false;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // --- DOM Elements ---
+    <script>
+        // DOM Elements
         const htmlCode = document.getElementById('html-code');
         const lineNumbers = document.getElementById('line-numbers');
         const outputFrame = document.getElementById('output-frame');
@@ -287,8 +231,6 @@
         const charCount = document.getElementById('char-count');
         const toast = document.getElementById('toast');
         const deviceBtns = document.querySelectorAll('.device-btn');
-        const shareModal = document.getElementById('share-modal');
-        const shareLinkInput = document.getElementById('share-link-input');
 
         // Default skeleton code for reset/init
         const defaultSkeleton = `<!DOCTYPE html>
@@ -301,8 +243,8 @@
 </head>
 <body class="p-10 bg-gray-100">
     <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">
-        <h1 class="text-3xl font-bold text-blue-600">பகிர்வுக்கு தயார்!</h1>
-        <p class="text-gray-600 mt-2">இந்த கோடை இப்போது சேமித்து மற்றவர்களுக்கு அனுப்பலாம்.</p>
+        <h1 class="text-3xl font-bold text-blue-600">Dev Edtr தயாராக உள்ளது!</h1>
+        <p class="text-gray-600 mt-2">உங்கள் HTML கோடை டைப் செய்து லைவ் அவுட்புட்டை பார்க்கவும்.</p>
     </div>
 </body>
 </html>`;
@@ -311,129 +253,7 @@
         let debounceTimer;
         const DEBOUNCE_DELAY = 10; // Instant execution
 
-        // --- FIREBASE FUNCTIONS ---
-
-        async function initFirebase() {
-            if (!firebaseConfig) {
-                console.error("Firebase configuration is missing.");
-                showToast("Firebase அமைப்பு இல்லை", true);
-                return;
-            }
-            
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                // Set Firestore logging to debug
-                // setLogLevel('Debug');
-
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                // Wait for auth state to be confirmed
-                onAuthStateChanged(auth, (user) => {
-                    isAuthReady = true;
-                    // Start main logic after auth is ready
-                    loadInitialState();
-                });
-
-            } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                showToast("Firebase தொடக்கம் தோல்வி.", true);
-            }
-        }
-        
-        // Use a simple short UUID for project ID
-        function generateProjectId() {
-            return Math.random().toString(36).substring(2, 9);
-        }
-
-        // Shared projects collection path
-        function getProjectPath(projectId) {
-            return `artifacts/${appId}/public/data/html_projects/${projectId}`;
-        }
-        
-        window.saveCodeAndShare = async function() {
-            if (!isAuthReady) {
-                showToast("Firebase தயாராகவில்லை. காத்திருக்கவும்.", true);
-                return;
-            }
-
-            const projectID = generateProjectId();
-            const projectRef = doc(db, getProjectPath(projectID));
-            const htmlContent = htmlCode.value;
-            
-            try {
-                showToast("கோடை சேமிக்கிறது...");
-                
-                await setDoc(projectRef, {
-                    html: htmlContent,
-                    timestamp: new Date().toISOString(),
-                    userId: auth.currentUser.uid,
-                });
-                
-                const shareUrl = `${window.location.origin}${window.location.pathname}?id=${projectID}`;
-                openShareModal(shareUrl);
-                
-            } catch (error) {
-                console.error("Failed to save and share code:", error);
-                showToast("சேமிப்பதில் தோல்வி.", true);
-            }
-        }
-
-        async function loadSharedCode(projectId) {
-            if (!isAuthReady) {
-                console.warn("Auth not ready. Deferring load.");
-                return;
-            }
-
-            const projectRef = doc(db, getProjectPath(projectId));
-            
-            try {
-                showToast("பகிரப்பட்ட கோடை ஏற்றுகிறது...");
-                const docSnap = await getDoc(projectRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    htmlCode.value = data.html || defaultSkeleton;
-                    debouncedUpdate(); // Update output immediately
-                    showToast(`கோட் லோட் ஆனது! (Project ID: ${projectId})`);
-                } else {
-                    console.log("No such shared document!");
-                    showToast("இந்த ID-க்கு கோட் இல்லை.", true);
-                    htmlCode.value = defaultSkeleton; // Fallback
-                    debouncedUpdate();
-                }
-            } catch (error) {
-                console.error("Failed to load shared code:", error);
-                showToast("கோட் ஏற்றுவதில் தோல்வி.", true);
-            }
-        }
-
-        // --- MODAL / TOAST FUNCTIONS ---
-
-        function openShareModal(url) {
-            shareLinkInput.value = url;
-            shareModal.classList.remove('hidden');
-        }
-
-        window.closeShareModal = function() {
-            shareModal.classList.add('hidden');
-        }
-
-        window.copyShareLink = function() {
-            shareLinkInput.select();
-            document.execCommand('copy');
-            showToast("இணைப்பு நகலெடுக்கப்பட்டது!");
-            closeShareModal();
-        }
-
-        // --- EDITOR FUNCTIONS (Updated) ---
-
+        // --- Line Number Logic ---
         function updateLineNumbers() {
             const lines = htmlCode.value.split('\n').length;
             lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
@@ -442,6 +262,8 @@
         function syncScroll() {
             lineNumbers.scrollTop = htmlCode.scrollTop;
         }
+
+        // --- EDITOR FUNCTIONS ---
 
         window.setDevice = function(mode) {
             deviceBtns.forEach(btn => btn.classList.remove('active'));
@@ -550,31 +372,24 @@
             }, 3000);
         }
 
-        function loadInitialState() {
-            // 1. Check for shared ID in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedId = urlParams.get('id');
-
-            if (sharedId) {
-                loadSharedCode(sharedId);
-            } else {
-                // 2. Load from Local Storage or use default
-                try {
-                    const saved = localStorage.getItem('liveEditor_html_advanced');
-                    if (saved) {
-                        htmlCode.value = saved;
-                    } else {
-                        htmlCode.value = defaultSkeleton;
-                    }
-                } catch (e) {
-                    console.warn("Load error", e);
+        function loadCode() {
+            // Load from Local Storage or use default
+            try {
+                const saved = localStorage.getItem('liveEditor_html_advanced');
+                if (saved) {
+                    htmlCode.value = saved;
+                } else {
                     htmlCode.value = defaultSkeleton;
                 }
+            } catch (e) {
+                console.warn("Load error", e);
+                htmlCode.value = defaultSkeleton;
             }
-            
-            // Final initialization tasks
+        }
+
+        window.onload = () => {
+            loadCode();
             updateOutput();
-            updateLineNumbers();
             
             // Event Listeners for editor
             htmlCode.addEventListener('input', () => {
@@ -584,13 +399,6 @@
             
             // Set default device view
             setDevice('desktop');
-        }
-
-        window.onload = () => {
-            initFirebase();
-            
-            // Handle scrolling immediately (if needed before full load)
-            htmlCode.addEventListener('scroll', syncScroll); 
         };
     </script>
 </body>
