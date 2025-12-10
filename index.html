@@ -4,22 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dev Edtr</title>
+    
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Custom styles */
+        /* Base styles (Light Theme Defaults) */
         :root {
             --editor-bg: #1e1e1e;
             --editor-fg: #d4d4d4;
             --line-num-bg: #2d2d2d;
             --line-num-fg: #858585;
+            --main-bg: #eff6ff; /* Blue-50 */
+            --header-bg: #ffffff;
+            --header-text: #2563eb;
+            --border-color: #bfdbfe; /* Blue-200 */
         }
 
+        /* Dark Theme Overrides */
+        body.dark-mode {
+            --main-bg: #111827; /* Gray-900 */
+            --header-bg: #1f2937; /* Gray-800 */
+            --header-text: #93c5fd; /* Blue-300 */
+            --border-color: #374151; /* Gray-700 */
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #eff6ff; /* Blue-50 equivalent */
+            background-color: var(--main-bg);
+            transition: background-color 0.3s;
         }
 
         /* Split layout logic */
@@ -36,7 +50,7 @@
             }
         }
 
-        /* Container for Line Numbers + Textarea */
+        /* Editor Styles */
         .editor-container {
             display: flex;
             height: 100%;
@@ -66,24 +80,44 @@
             border: none;
             resize: none;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             line-height: 1.5;
             outline: none;
             background-color: var(--editor-bg);
             color: var(--editor-fg);
             white-space: pre; 
-            overflow: auto; /* Handles both X and Y scrolling */
+            overflow: auto;
+        }
+        
+        /* Console Styles */
+        #console-output-wrapper {
+            transition: height 0.3s ease;
+            overflow: hidden; 
+        }
+        #console-output {
+            background-color: #000;
+            color: #ccc;
+            height: 150px; 
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            padding: 5px;
         }
 
+        /* Console log types */
+        .console-log { color: #ccc; }
+        .console-error { color: #f87171; font-weight: bold; } 
+        .console-warn { color: #fcd34d; } 
+        
         /* Output frame wrapper for centering */
         .output-wrapper {
-            background-color: #f1f5f9; 
+            background-color: var(--main-bg);
             display: flex;
             justify-content: center;
             align-items: flex-start;
             overflow: auto;
-            height: 100%;
             width: 100%;
+            flex: 1; 
             padding-top: 0;
         }
 
@@ -112,44 +146,62 @@
         .hidden-editor {
             display: none !important;
         }
-
-        /* Scrollbar customization for editor */
-        textarea::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        textarea::-webkit-scrollbar-track {
-            background: #1e1e1e; 
-        }
-        textarea::-webkit-scrollbar-thumb {
-            background: #60a5fa; 
-            border-radius: 5px;
-        }
-        textarea::-webkit-scrollbar-thumb:hover {
-            background: #3b82f6; 
-        }
         
         /* Device Button Active State */
         .device-btn.active {
             background-color: #bfdbfe; 
             color: #1e40af; 
         }
+
+        /* Scrollbar customization */
+        textarea::-webkit-scrollbar, #console-output::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        textarea::-webkit-scrollbar-track { background: #1e1e1e; }
+        textarea::-webkit-scrollbar-thumb { background: #60a5fa; border-radius: 5px; }
+        textarea::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+        
+        /* Dark mode colors for general elements */
+        .dark-mode .header { background-color: var(--header-bg); border-color: var(--border-color); }
+        .dark-mode .header h1 { color: var(--header-text); }
+        .dark-mode .output-panel-container { background-color: var(--header-bg); border-color: var(--border-color); }
+        .dark-mode .output-bar { background-color: #1f2937; border-color: #374151; }
+        .dark-mode .output-wrapper { background-color: #111827; }
+        .dark-mode .download-btn { background-color: #3b82f6; border-color: #3b82f6; }
+        .dark-mode .reset-btn { background-color: #1f2937; border-color: #60a5fa; color: #f87171; }
+        .dark-mode .reset-btn:hover { background-color: #374151; }
+        
+        /* Hidden console state */
+        .console-hidden {
+            height: 0px !important;
+            padding: 0 !important;
+            border: none !important;
+        }
     </style>
 </head>
-<body class="h-screen flex flex-col p-2 md:p-4 bg-blue-50">
+<body class="h-screen flex flex-col p-2 md:p-4">
 
     <!-- Header and Controls -->
-    <div class="flex-none bg-white p-3 rounded-xl shadow-md border border-blue-100 mb-3 flex flex-col md:flex-row justify-between items-center gap-3">
+    <div class="flex-none header bg-white p-3 rounded-xl shadow-md border border-blue-100 mb-3 flex flex-col md:flex-row justify-between items-center gap-3">
         <div class="flex items-center gap-3">
             <h1 class="text-xl font-extrabold text-blue-600"><i class="fa-solid fa-code"></i> Dev Edtr</h1>
+            <!-- Database Connection Status -->
+            <span id="db-status" class="text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-600">
+                <i class="fa-solid fa-database mr-1"></i> Database Connecting...
+            </span>
         </div>
 
         <div class="flex flex-wrap justify-center gap-2">
-            <!-- Share/Save button removed -->
-            <button onclick="downloadCode();" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition" title="Download">
+            <!-- Theme Toggle Button -->
+            <button onclick="toggleTheme();" id="theme-toggle-btn" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition" title="Toggle Theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+
+            <button onclick="downloadCode();" class="download-btn px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition" title="Download">
                 <i class="fa-solid fa-download mr-1"></i> பதிவிறக்கம்
             </button>
-            <button onclick="clearCode();" class="px-4 py-2 bg-white border border-blue-200 text-red-500 hover:bg-red-50 hover:text-red-600 text-sm font-medium rounded-lg shadow-sm transition" title="Reset Instantly">
+            <button onclick="clearCode();" class="reset-btn px-4 py-2 bg-white border border-blue-200 text-red-500 hover:bg-red-50 hover:text-red-600 text-sm font-medium rounded-lg shadow-sm transition" title="Reset Instantly">
                 <i class="fa-solid fa-trash mr-1"></i> மீட்டமை
             </button>
         </div>
@@ -168,13 +220,13 @@
             <!-- Editor Container with Line Numbers -->
             <div class="editor-container flex-1 overflow-hidden">
                 <div id="line-numbers" class="line-numbers">1</div>
-                <textarea id="html-code" class="code-input" placeholder="<!-- Type your HTML here... -->" spellcheck="false"></textarea>
+                <textarea id="html-code" class="code-input" placeholder="<!-- உங்கள் HTML, CSS மற்றும் JavaScript கோடை இங்கே டைப் செய்யவும்... -->" spellcheck="false"></textarea>
             </div>
         </div>
 
-        <!-- 2. Live Output Panel -->
+        <!-- 2. Live Output Panel (Split into Output and Console) -->
         <div class="output-panel-container flex-1 flex flex-col rounded-xl overflow-hidden shadow-xl border border-blue-200 bg-white">
-            <div class="flex justify-between items-center bg-blue-50 border-b border-blue-100 px-3 py-2 flex-none">
+            <div class="flex justify-between items-center output-bar bg-blue-50 border-b border-blue-100 px-3 py-2 flex-none">
                 <!-- Mac-style Dots -->
                 <div class="flex items-center gap-1.5 hidden sm:flex">
                     <div class="w-2.5 h-2.5 rounded-full bg-red-400"></div>
@@ -186,9 +238,6 @@
                 <div class="flex bg-white border border-blue-100 rounded-lg p-1 gap-1 mx-auto shadow-sm">
                     <button onclick="setDevice('mobile')" class="device-btn px-2 py-1 rounded text-gray-500 hover:bg-blue-50 transition" title="Mobile (375px)">
                         <i class="fa-solid fa-mobile-screen"></i>
-                    </button>
-                    <button onclick="setDevice('tablet')" class="device-btn px-2 py-1 rounded text-gray-500 hover:bg-blue-50 transition" title="Tablet (768px)">
-                        <i class="fa-solid fa-tablet-screen-button"></i>
                     </button>
                     <button onclick="setDevice('desktop')" class="device-btn active px-2 py-1 rounded text-gray-500 hover:bg-blue-50 transition" title="Desktop (100%)">
                         <i class="fa-solid fa-desktop"></i>
@@ -206,9 +255,27 @@
                 </div>
             </div>
             
-            <!-- Iframe Wrapper for Centering & Resizing -->
-            <div class="output-wrapper flex-1">
+            <!-- Iframe Output Area -->
+            <div class="output-wrapper">
                 <iframe id="output-frame" class="w-full h-full"></iframe>
+            </div>
+
+            <!-- Console Bar -->
+            <div class="flex-none bg-gray-900 text-white p-1 flex justify-between items-center text-xs border-t border-blue-200">
+                <span class="font-bold ml-1">CONSOLE OUTPUT</span>
+                <div class="flex items-center space-x-2">
+                    <button onclick="clearConsole()" class="text-xs text-gray-400 hover:text-white px-1 py-0.5 transition" title="Clear Console">
+                        <i class="fa-solid fa-xmark mr-1"></i> Clear
+                    </button>
+                    <!-- Console Hide Button -->
+                    <button onclick="toggleConsolePanel()" id="console-toggle-btn" class="text-xs text-gray-400 hover:text-white px-1 py-0.5 transition" title="Hide/Show Console">
+                        <i class="fa-solid fa-angle-down"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Console Output Panel -->
+            <div id="console-output-wrapper" class="flex-none h-[150px]">
+                <pre id="console-output" class="h-full"></pre>
             </div>
         </div>
 
@@ -220,17 +287,37 @@
     </div>
 
 
-    <script>
-        // DOM Elements
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Variables
+        let db;
+        let auth;
+        let isAuthReady = false;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // --- DOM Elements ---
         const htmlCode = document.getElementById('html-code');
         const lineNumbers = document.getElementById('line-numbers');
         const outputFrame = document.getElementById('output-frame');
+        const consoleOutput = document.getElementById('console-output');
+        const consoleOutputWrapper = document.getElementById('console-output-wrapper');
+        const consoleToggleButton = document.getElementById('console-toggle-btn');
         const editorPanel = document.querySelector('.html-editor-panel');
         const outputPanel = document.querySelector('.output-panel-container');
         const fullscreenButton = document.getElementById('fullscreen-btn');
         const charCount = document.getElementById('char-count');
         const toast = document.getElementById('toast');
         const deviceBtns = document.querySelectorAll('.device-btn');
+        const body = document.body;
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const dbStatus = document.getElementById('db-status');
+
 
         // Default skeleton code for reset/init
         const defaultSkeleton = `<!DOCTYPE html>
@@ -241,17 +328,155 @@
     <script src="https://cdn.tailwindcss.com"><\/script>
     <title>Dev Edtr Project</title>
 </head>
-<body class="p-10 bg-gray-100">
+<body class="p-8 bg-gray-100 text-gray-800">
     <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">
-        <h1 class="text-3xl font-bold text-blue-600">Dev Edtr தயாராக உள்ளது!</h1>
-        <p class="text-gray-600 mt-2">உங்கள் HTML கோடை டைப் செய்து லைவ் அவுட்புட்டை பார்க்கவும்.</p>
+        <h1 class="text-3xl font-bold text-blue-600">Database Ready!</h1>
+        <p class="mt-2 text-sm">Firebase இணைப்பு இப்போது தயார். (Console-ஐ பார்க்கவும்)</p>
+        <button id="testBtn" class="mt-4 bg-green-500 hover:bg-green-600 text-white p-2 rounded">Console Log</button>
     </div>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', () => {
+            console.log("பட்டன் கிளிக் செய்யப்பட்டது.");
+            console.warn("இந்த இணைப்பு உள்ளூர் சர்வர் மூலம் இயங்கினால் மட்டுமே Database இணைப்பு வேலை செய்யும்.");
+        });
+    <\/script>
 </body>
 </html>`;
 
         // Debounce Logic
         let debounceTimer;
         const DEBOUNCE_DELAY = 10; // Instant execution
+
+        // --- FIREBASE INITIALIZATION ---
+
+        async function initFirebase() {
+            if (!firebaseConfig) {
+                dbStatus.textContent = 'Database Disabled (No Config)';
+                dbStatus.classList.replace('bg-red-100', 'bg-gray-100');
+                dbStatus.classList.replace('text-red-600', 'text-gray-600');
+                return;
+            }
+            
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // setLogLevel('Debug'); // Enable this for verbose debugging
+
+                // Sign in logic
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onAuthStateChanged(auth, (user) => {
+                    isAuthReady = true;
+                    if (user) {
+                        dbStatus.textContent = 'Database Connected';
+                        dbStatus.classList.replace('bg-red-100', 'bg-green-100');
+                        dbStatus.classList.replace('text-red-600', 'text-green-600');
+                        console.log("Firebase: Anonymous user signed in successfully.");
+                    } else {
+                        dbStatus.textContent = 'Database Disconnected';
+                        dbStatus.classList.replace('bg-red-100', 'bg-red-100');
+                        dbStatus.classList.replace('text-red-600', 'text-red-600');
+                    }
+                    loadCode(); // Load code only after auth is confirmed
+                    updateOutput();
+                    setDevice('desktop'); // Final setup after everything is loaded
+                });
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                dbStatus.textContent = 'Database Error';
+                dbStatus.classList.replace('bg-red-100', 'bg-red-100');
+                dbStatus.classList.replace('text-red-600', 'text-red-600');
+                loadCode();
+                updateOutput();
+                setDevice('desktop');
+            }
+        }
+
+
+        // --- THEME TOGGLE LOGIC ---
+        window.toggleTheme = function() {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('editorTheme', isDark ? 'dark' : 'light');
+            themeToggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('editorTheme');
+            if (savedTheme === 'dark') {
+                body.classList.add('dark-mode');
+                themeToggleBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+            } else {
+                themeToggleBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+            }
+        }
+
+
+        // --- CONSOLE LOGIC ---
+
+        window.clearConsole = function() {
+            consoleOutput.innerHTML = '';
+            showToast("Console Clear ஆனது.");
+        }
+
+        window.toggleConsolePanel = function() {
+            const isHidden = consoleOutputWrapper.classList.toggle('console-hidden');
+            consoleToggleButton.innerHTML = isHidden ? '<i class="fa-solid fa-angle-up"></i>' : '<i class="fa-solid fa-angle-down"></i>';
+            showToast(isHidden ? "Console மறைக்கப்பட்டது" : "Console தோன்றியது");
+        }
+
+
+        function hijackConsole(iframe) {
+            if (!iframe.contentWindow) return;
+
+            const consoleMethods = ['log', 'warn', 'error'];
+            
+            consoleOutput.innerHTML = ''; 
+
+            consoleMethods.forEach(method => {
+                iframe.contentWindow.console[method] = (...args) => {
+                    const message = args.map(arg => {
+                        if (typeof arg === 'object' && arg !== null) {
+                            try {
+                                return JSON.stringify(arg);
+                            } catch (e) {
+                                return String(arg); 
+                            }
+                        }
+                        return String(arg);
+                    }).join(' ');
+
+                    const typeClass = `console-${method}`;
+                    const line = document.createElement('div');
+                    line.className = typeClass;
+                    line.textContent = `[${method.toUpperCase()}] ${message}`;
+                    consoleOutput.appendChild(line);
+                    
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                    
+                    console[method](...args);
+                };
+            });
+            
+            // Capture runtime errors
+            iframe.contentWindow.onerror = (message, source, lineno, colno, error) => {
+                const line = document.createElement('div');
+                line.className = 'console-error';
+                line.textContent = `[RUNTIME ERROR] ${message} (Line: ${lineno})`;
+                consoleOutput.appendChild(line);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                return true; 
+            };
+        }
+
 
         // --- Line Number Logic ---
         function updateLineNumbers() {
@@ -275,20 +500,13 @@
                 outputFrame.style.borderRadius = '20px';
                 outputFrame.style.border = '8px solid #333';
                 deviceBtns[0].classList.add('active');
-            } else if (mode === 'tablet') {
-                outputFrame.style.width = '768px';
-                outputFrame.style.height = '1024px';
-                outputFrame.style.marginTop = '20px';
-                outputFrame.style.borderRadius = '12px';
-                outputFrame.style.border = '8px solid #333';
-                deviceBtns[1].classList.add('active');
-            } else {
+            } else if (mode === 'desktop') {
                 outputFrame.style.width = '100%';
                 outputFrame.style.height = '100%';
                 outputFrame.style.marginTop = '0';
                 outputFrame.style.borderRadius = '0';
                 outputFrame.style.border = 'none';
-                deviceBtns[2].classList.add('active');
+                deviceBtns[1].classList.add('active'); 
             }
         }
 
@@ -316,9 +534,14 @@
             updateLineNumbers(); 
 
             const finalOutput = html;
+            
+            // Write content to iframe
             outputFrame.contentWindow.document.open();
             outputFrame.contentWindow.document.write(finalOutput);
             outputFrame.contentWindow.document.close();
+
+            // IMPORTANT: Hijack console AFTER content is loaded
+            hijackConsole(outputFrame);
         }
 
         function saveCodeLocal() {
@@ -354,6 +577,7 @@
             htmlCode.value = '';
             localStorage.removeItem('liveEditor_html_advanced');
             updateOutput(); 
+            clearConsole();
             showToast("எடிட்டர் அழிக்கப்பட்டது");
         }
 
@@ -388,17 +612,14 @@
         }
 
         window.onload = () => {
-            loadCode();
-            updateOutput();
+            loadTheme();
+            initFirebase(); // Start Firebase init
             
             // Event Listeners for editor
             htmlCode.addEventListener('input', () => {
                 debouncedUpdate();
             });
             htmlCode.addEventListener('scroll', syncScroll);
-            
-            // Set default device view
-            setDevice('desktop');
         };
     </script>
 </body>
