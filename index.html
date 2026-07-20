@@ -178,6 +178,34 @@
             padding: 0 !important;
             border: none !important;
         }
+
+        /* Range Selector Styling with Dark Theme support */
+        .range-selector-panel {
+            background-color: #f0f7ff;
+            border-top: 1px solid var(--border-color);
+            transition: background-color 0.3s;
+        }
+        .dark-mode .range-selector-panel {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+        .dark-mode .range-text-title {
+            color: #93c5fd;
+        }
+        .dark-mode .range-text-muted {
+            color: #9ca3af;
+        }
+        .dark-mode .range-input-num {
+            background-color: #111827;
+            color: #d4d4d4;
+            border-color: #4b5563;
+        }
+        #range-collapse-icon {
+            transition: transform 0.2s ease;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col p-2 md:p-4">
@@ -221,6 +249,61 @@
             <div class="editor-container flex-1 overflow-hidden">
                 <div id="line-numbers" class="line-numbers">1</div>
                 <textarea id="html-code" class="code-input" placeholder="<!-- உங்கள் HTML, CSS மற்றும் JavaScript கோடை இங்கே டைப் செய்யவும்... -->" spellcheck="false"></textarea>
+            </div>
+
+            <!-- Range Selector Control Section -->
+            <div class="range-selector-panel flex-none">
+                <button onclick="toggleRangeSelector()" class="w-full flex justify-between items-center px-4 py-2.5 text-xs font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100/30 dark:hover:bg-gray-700/30 transition select-none">
+                    <span class="flex items-center gap-2 range-text-title">
+                        <i class="fa-solid fa-sliders text-blue-500"></i>
+                        <span>RANGE SELECTOR (வரிசை வரம்பு தேர்வி)</span>
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <span id="range-badge" class="bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-[10px] font-semibold dark:bg-blue-900 dark:text-blue-200">Lines: 1 - 1</span>
+                        <i id="range-collapse-icon" class="fa-solid fa-chevron-up text-blue-500"></i>
+                    </div>
+                </button>
+                <div id="range-selector-content" class="px-4 pb-3 pt-1 border-t border-blue-100 dark:border-gray-700/50 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                    <!-- Sliders -->
+                    <div class="md:col-span-7 space-y-2">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1 flex items-center gap-2">
+                                <span class="text-xs text-gray-500 range-text-muted w-10">Start:</span>
+                                <input type="range" id="range-start-slider" min="1" max="1" value="1" class="w-full accent-blue-600 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer">
+                                <input type="number" id="range-start-val" min="1" max="1" value="1" class="range-input-num w-12 text-center text-xs p-1 border border-blue-200 rounded bg-white text-gray-800">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1 flex items-center gap-2">
+                                <span class="text-xs text-gray-500 range-text-muted w-10">End:</span>
+                                <input type="range" id="range-end-slider" min="1" max="1" value="1" class="w-full accent-blue-600 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg cursor-pointer">
+                                <input type="number" id="range-end-val" min="1" max="1" value="1" class="range-input-num w-12 text-center text-xs p-1 border border-blue-200 rounded bg-white text-gray-800">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Stats & Actions -->
+                    <div class="md:col-span-5 flex flex-wrap gap-2 justify-end">
+                        <div class="text-[11px] text-gray-500 range-text-muted w-full flex justify-between border-b border-blue-100 dark:border-gray-700/50 pb-1 mb-1">
+                            <span>Selected: <strong id="range-chars-count" class="text-blue-600 dark:text-blue-400">0</strong> chars</span>
+                            <span>Lines: <strong id="range-lines-count" class="text-blue-600 dark:text-blue-400">1</strong></span>
+                        </div>
+                        <button onclick="rangeActionSelect()" class="px-2.5 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs transition font-semibold flex items-center gap-1 dark:bg-blue-900/50 dark:hover:bg-blue-900/80 dark:text-blue-300">
+                            <i class="fa-solid fa-arrow-pointer"></i> Highlight
+                        </button>
+                        <button onclick="rangeActionCopy()" class="px-2.5 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-xs transition font-semibold flex items-center gap-1 dark:bg-green-950/50 dark:hover:bg-green-950 dark:text-green-300">
+                            <i class="fa-solid fa-copy"></i> Copy
+                        </button>
+                        <button onclick="rangeActionCut()" class="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded text-xs transition font-semibold flex items-center gap-1 dark:bg-rose-950/50 dark:hover:bg-rose-950 dark:text-rose-300" title="Cut selected line range">
+                            <i class="fa-solid fa-scissors"></i> Cut
+                        </button>
+                        <button onclick="rangeActionComment()" class="px-2.5 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded text-xs transition font-semibold flex items-center gap-1 dark:bg-purple-950/50 dark:hover:bg-purple-950 dark:text-purple-300">
+                            <i class="fa-solid fa-comment-slash"></i> Comment
+                        </button>
+                        <button onclick="rangeActionExtract()" class="px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded text-xs transition font-semibold flex items-center gap-1 dark:bg-amber-950/50 dark:hover:bg-amber-950 dark:text-amber-300" title="Keep only selected range">
+                            <i class="fa-solid fa-crop"></i> Crop
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -285,7 +368,6 @@
     <div id="toast" class="fixed bottom-5 right-5 bg-blue-900 text-white px-4 py-2 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300">
         செயல் வெற்றிகரமாக முடிந்தது!
     </div>
-
 
     <script type="module">
         // --- FIREBASE IMPORTS ---
@@ -482,6 +564,7 @@
         function updateLineNumbers() {
             const lines = htmlCode.value.split('\n').length;
             lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
+            updateRangeLimits(lines);
         }
 
         function syncScroll() {
@@ -611,6 +694,220 @@
             }
         }
 
+        // --- CODE RANGE SELECTOR LOGIC ---
+        
+        function getCharIndicesForLineRange(text, startLine, endLine) {
+            const lines = text.split('\n');
+            let startCharIndex = 0;
+            let endCharIndex = 0;
+            
+            for (let i = 0; i < startLine - 1; i++) {
+                if (i < lines.length) {
+                    startCharIndex += lines[i].length + 1; // +1 to count the newline character
+                }
+            }
+            
+            endCharIndex = startCharIndex;
+            for (let i = startLine - 1; i < endLine; i++) {
+                if (i < lines.length) {
+                    endCharIndex += lines[i].length + (i === lines.length - 1 ? 0 : 1);
+                }
+            }
+            return { start: startCharIndex, end: endCharIndex };
+        }
+
+        function updateRangeLimits(totalLines) {
+            const rStartSlider = document.getElementById('range-start-slider');
+            const rEndSlider = document.getElementById('range-end-slider');
+            const rStartVal = document.getElementById('range-start-val');
+            const rEndVal = document.getElementById('range-end-val');
+            
+            if (!rStartSlider) return;
+            
+            const prevStart = parseInt(rStartSlider.value) || 1;
+            const prevEnd = parseInt(rEndSlider.value) || 1;
+            
+            rStartSlider.max = totalLines;
+            rEndSlider.max = totalLines;
+            rStartVal.max = totalLines;
+            rEndVal.max = totalLines;
+            
+            const nextStart = Math.min(prevStart, totalLines);
+            const nextEnd = Math.min(prevEnd, totalLines);
+            
+            rStartSlider.value = nextStart;
+            rStartVal.value = nextStart;
+            rEndSlider.value = nextEnd;
+            rEndVal.value = nextEnd;
+            
+            updateRangeStats();
+        }
+
+        function updateRangeStats() {
+            const start = parseInt(document.getElementById('range-start-slider').value) || 1;
+            const end = parseInt(document.getElementById('range-end-slider').value) || 1;
+            
+            const badge = document.getElementById('range-badge');
+            if (badge) {
+                badge.textContent = `Lines: ${start} - ${end}`;
+            }
+            
+            const linesCount = document.getElementById('range-lines-count');
+            if (linesCount) {
+                linesCount.textContent = (end - start + 1);
+            }
+            
+            const text = htmlCode.value;
+            const { start: startIdx, end: endIdx } = getCharIndicesForLineRange(text, start, end);
+            const selectedText = text.substring(startIdx, endIdx);
+            
+            const charsCount = document.getElementById('range-chars-count');
+            if (charsCount) {
+                charsCount.textContent = selectedText.length;
+            }
+        }
+
+        window.toggleRangeSelector = function() {
+            const content = document.getElementById('range-selector-content');
+            const icon = document.getElementById('range-collapse-icon');
+            const isHidden = content.classList.contains('hidden');
+            
+            if (isHidden) {
+                content.classList.remove('hidden');
+                icon.classList.remove('rotate-180');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.add('rotate-180');
+            }
+        }
+
+        window.rangeActionSelect = function() {
+            const text = htmlCode.value;
+            const start = parseInt(document.getElementById('range-start-slider').value) || 1;
+            const end = parseInt(document.getElementById('range-end-slider').value) || 1;
+            
+            const { start: startIdx, end: endIdx } = getCharIndicesForLineRange(text, start, end);
+            
+            htmlCode.focus();
+            htmlCode.setSelectionRange(startIdx, endIdx);
+            
+            // Try to scroll textarea to center/reveal the selection
+            const lines = text.split('\n');
+            const totalLines = lines.length;
+            if (totalLines > 0) {
+                const scrollRatio = (start - 1) / totalLines;
+                htmlCode.scrollTop = htmlCode.scrollHeight * scrollRatio;
+            }
+            
+            showToast("வரிசை வரம்பு தேர்ந்தெடுக்கப்பட்டது!");
+        }
+
+        window.rangeActionCopy = function() {
+            const text = htmlCode.value;
+            const start = parseInt(document.getElementById('range-start-slider').value) || 1;
+            const end = parseInt(document.getElementById('range-end-slider').value) || 1;
+            
+            const lines = text.split('\n');
+            const targetLines = lines.slice(start - 1, end);
+            const rangeText = targetLines.join('\n');
+            
+            if (!rangeText.trim()) {
+                showToast("வரம்பு காலியாக உள்ளது!", true);
+                return;
+            }
+
+            // Fallback clipboard logic
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = rangeText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempTextArea);
+            
+            showToast("வரிசை வரம்பு வெற்றிகரமாக நகலெடுக்கப்பட்டது!");
+        }
+
+        window.rangeActionCut = function() {
+            const text = htmlCode.value;
+            const start = parseInt(document.getElementById('range-start-slider').value) || 1;
+            const end = parseInt(document.getElementById('range-end-slider').value) || 1;
+            
+            const lines = text.split('\n');
+            const targetLines = lines.slice(start - 1, end);
+            const rangeText = targetLines.join('\n');
+            
+            if (!rangeText.trim()) {
+                showToast("வரம்பு காலியாக உள்ளது!", true);
+                return;
+            }
+
+            // Copy range text to clipboard
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = rangeText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempTextArea);
+
+            // Remove selected lines from editor content
+            lines.splice(start - 1, end - start + 1);
+            htmlCode.value = lines.join('\n');
+            
+            updateOutput();
+            saveCodeLocal();
+            showToast("வரிசை வரம்பு வெற்றிகரமாக வெட்டப்பட்டது (Cut)!");
+        }
+
+        window.rangeActionComment = function() {
+            const text = htmlCode.value;
+            const start = parseInt(document.getElementById('range-start-slider').value) || 1;
+            const end = parseInt(document.getElementById('range-end-slider').value) || 1;
+            
+            const lines = text.split('\n');
+            const targetLines = lines.slice(start - 1, end);
+            const joinedTarget = targetLines.join('\n');
+            
+            let resultText;
+            const isCommented = joinedTarget.trim().startsWith('<!--') && joinedTarget.trim().endsWith('-->');
+            
+            if (isCommented) {
+                let unwrapped = joinedTarget.trim();
+                unwrapped = unwrapped.substring(4, unwrapped.length - 3).trim();
+                lines.splice(start - 1, end - start + 1, unwrapped);
+                resultText = lines.join('\n');
+                showToast("கமெண்ட் நீக்கப்பட்டது!");
+            } else {
+                const wrapped = `<!-- \n${joinedTarget}\n -->`;
+                lines.splice(start - 1, end - start + 1, wrapped);
+                resultText = lines.join('\n');
+                showToast("கமெண்ட் சேர்க்கப்பட்டது!");
+            }
+            
+            htmlCode.value = resultText;
+            updateOutput();
+            saveCodeLocal();
+        }
+
+        window.rangeActionExtract = function() {
+            const text = htmlCode.value;
+            const start = parseInt(document.getElementById('range-start-slider').value) || 1;
+            const end = parseInt(document.getElementById('range-end-slider').value) || 1;
+            
+            const lines = text.split('\n');
+            const targetLines = lines.slice(start - 1, end);
+            const rangeText = targetLines.join('\n');
+            
+            if (!rangeText.trim()) {
+                showToast("தேர்ந்தெடுக்க வரம்பு காலியாக உள்ளது!", true);
+                return;
+            }
+            
+            htmlCode.value = rangeText;
+            updateOutput();
+            saveCodeLocal();
+            showToast("தேர்ந்தெடுக்கப்பட்ட பகுதி மட்டும் வைக்கப்பட்டது!");
+        }
+
         window.onload = () => {
             loadTheme();
             initFirebase(); // Start Firebase init
@@ -620,8 +917,63 @@
                 debouncedUpdate();
             });
             htmlCode.addEventListener('scroll', syncScroll);
+
+            // Range Selector inputs synchronization
+            const rStartSlider = document.getElementById('range-start-slider');
+            const rEndSlider = document.getElementById('range-end-slider');
+            const rStartVal = document.getElementById('range-start-val');
+            const rEndVal = document.getElementById('range-end-val');
+            
+            function syncRangeInputs(changedId) {
+                const totalLines = htmlCode.value.split('\n').length;
+                let start = parseInt(rStartSlider.value) || 1;
+                let end = parseInt(rEndSlider.value) || 1;
+                
+                if (changedId === 'start-slider') {
+                    rStartVal.value = rStartSlider.value;
+                    start = parseInt(rStartSlider.value);
+                    if (start > end) {
+                        rEndSlider.value = start;
+                        rEndVal.value = start;
+                    }
+                } else if (changedId === 'start-val') {
+                    let val = parseInt(rStartVal.value) || 1;
+                    val = Math.max(1, Math.min(val, totalLines));
+                    rStartVal.value = val;
+                    rStartSlider.value = val;
+                    start = val;
+                    if (start > end) {
+                        rEndSlider.value = start;
+                        rEndVal.value = start;
+                    }
+                } else if (changedId === 'end-slider') {
+                    rEndVal.value = rEndSlider.value;
+                    end = parseInt(rEndSlider.value);
+                    if (end < start) {
+                        rStartSlider.value = end;
+                        rStartVal.value = end;
+                    }
+                } else if (changedId === 'end-val') {
+                    let val = parseInt(rEndVal.value) || 1;
+                    val = Math.max(1, Math.min(val, totalLines));
+                    rEndVal.value = val;
+                    rEndSlider.value = val;
+                    end = val;
+                    if (end < start) {
+                        rStartSlider.value = end;
+                        rStartVal.value = end;
+                    }
+                }
+                updateRangeStats();
+            }
+            
+            if (rStartSlider) {
+                rStartSlider.addEventListener('input', () => syncRangeInputs('start-slider'));
+                rStartVal.addEventListener('input', () => syncRangeInputs('start-val'));
+                rEndSlider.addEventListener('input', () => syncRangeInputs('end-slider'));
+                rEndVal.addEventListener('input', () => syncRangeInputs('end-val'));
+            }
         };
     </script>
 </body>
 </html>
-
