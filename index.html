@@ -589,10 +589,10 @@
             });
 
             // Set placeholder according to active tab
-            if (activeTab === 'html') htmlCode.placeholder = "<!-- HTML குறியீடுகளை இங்கே டைப் செய்யவும்... -->";
-            else if (activeTab === 'css') htmlCode.placeholder = "/* CSS ஸ்டைல்களை இங்கே டைப் செய்யவும்... */";
-            else if (activeTab === 'js') htmlCode.placeholder = "// JavaScript குறியீடுகளை இங்கே டைப் செய்யவும்...";
-            else if (activeTab === 'single') htmlCode.placeholder = "<!-- முழு HTML, CSS, JS குறியீடுகளை ஒரே கோப்பாக டைப் செய்யவும்... -->";
+            if (activeTab === 'html') htmlCode.placeholder = "";
+            else if (activeTab === 'css') htmlCode.placeholder = "";
+            else if (activeTab === 'js') htmlCode.placeholder = "";
+            else if (activeTab === 'single') htmlCode.placeholder = "";
 
             // Load stored content into editor
             htmlCode.value = codeStore[activeTab] || '';
