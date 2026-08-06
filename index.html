@@ -742,8 +742,11 @@
             showToast("Gemini API Key நீக்கப்பட்டது");
         };
 
-        function getSavedApiKey() {
-            return localStorage.getItem('gemini_api_key_dev_edtr') || '';
+       function getSavedApiKey() {
+            const savedKey = localStorage.getItem('gemini_api_key_dev_edtr');
+            if (savedKey && savedKey.trim()) return savedKey.trim();
+            const inputEl = document.getElementById('ai-api-key-input');
+            return inputEl ? inputEl.value.trim() : '';
         }
 
         function updateApiStatus(isSet) {
@@ -814,10 +817,19 @@
             return clean.trim();
         }
 
-        window.requestAiFix = async function() {
+       window.requestAiFix = async function() {
             if (isAiProcessing) return;
 
-            const apiKey = getSavedApiKey();
+            let apiKey = getSavedApiKey();
+            if (!apiKey) {
+                const inputKey = document.getElementById('ai-api-key-input')?.value.trim();
+                if (inputKey) {
+                    apiKey = inputKey;
+                    localStorage.setItem('gemini_api_key_dev_edtr', apiKey);
+                    updateApiStatus(true);
+                }
+            }
+
             if (!apiKey) {
                 showToast("Gemini API Key இல்லை! AI Assistant panel-ல் API Key உள்ளிடவும்.", true);
                 document.getElementById('ai-assistant-panel').classList.remove('hidden');
