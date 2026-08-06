@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dev Edtr</title>
 
-    <!-- SVG Data-URI Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563eb'/><path d='M32 35 L18 50 L32 65 M68 35 L82 50 L68 65 M58 28 L42 72' stroke='%23ffffff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Base styles (Light Theme Defaults) */
@@ -254,18 +251,15 @@
 </head>
 <body class="h-screen flex flex-col p-2 md:p-4">
 
-    <!-- Header and Controls -->
     <div class="flex-none header bg-white p-3 rounded-xl shadow-md border border-blue-100 mb-3 flex flex-col md:flex-row justify-between items-center gap-3">
         <div class="flex items-center gap-3">
             <h1 class="text-xl font-extrabold text-blue-600"><i class="fa-solid fa-code"></i> Dev Edtr Pro</h1>
-            <!-- Database Connection Status -->
             <span id="db-status" class="text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-600">
                 <i class="fa-solid fa-database mr-1"></i> Database Connecting...
             </span>
         </div>
 
         <div class="flex flex-wrap justify-center gap-2">
-            <!-- Mode Selector Toggle -->
             <div class="bg-blue-50 dark:bg-gray-800 p-1 rounded-lg border border-blue-200 dark:border-gray-700 flex items-center gap-1">
                 <button onclick="switchMode('multi')" id="mode-btn-multi" class="px-2.5 py-1 text-xs font-bold rounded-md transition bg-blue-600 text-white shadow-sm">
                     <i class="fa-solid fa-layer-group mr-1"></i> HTML / CSS / JS
@@ -275,7 +269,6 @@
                 </button>
             </div>
 
-            <!-- Theme Toggle Button -->
             <button onclick="toggleTheme();" id="theme-toggle-btn" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-lg shadow-sm transition" title="Toggle Theme">
                 <i class="fa-solid fa-moon"></i>
             </button>
@@ -289,15 +282,11 @@
         </div>
     </div>
 
-    <!-- Main Split Area -->
     <div class="main-split flex-1 min-h-0">
         
-        <!-- 1. HTML/CSS/JS Editor Panel -->
         <div class="html-editor-panel flex-1 flex flex-col rounded-xl overflow-hidden shadow-xl border border-blue-200 relative">
             
-            <!-- Professional Editor Tabs Header -->
             <div class="bg-gray-900 text-white px-2 pt-1.5 flex justify-between items-center select-none flex-none border-b border-gray-800">
-                <!-- Multi-mode Tabs -->
                 <div id="multi-tabs" class="flex items-center gap-1">
                     <button onclick="switchTab('html')" id="tab-html" class="editor-tab-btn active">
                         <i class="fa-brands fa-html5 text-orange-500 text-sm"></i> HTML
@@ -310,26 +299,22 @@
                     </button>
                 </div>
 
-                <!-- Single Mode Tab Header -->
                 <div id="single-tabs" class="hidden flex items-center gap-1">
                     <button id="tab-single" class="editor-tab-btn active">
                         <i class="fa-solid fa-code text-blue-400 text-sm"></i> index.html
                     </button>
                 </div>
 
-                <!-- Character Count Badge -->
                 <div class="pr-2 text-xs text-gray-400 font-mono">
                     <span id="char-count" class="text-blue-400">0 chars</span>
                 </div>
             </div>
             
-            <!-- Editor Container with Line Numbers -->
             <div class="editor-container flex-1 overflow-hidden">
                 <div id="line-numbers" class="line-numbers">1</div>
-                <textarea id="html-code" class="code-input" placeholder="<!-- உங்கள் கோடை இங்கே டைப் செய்யவும்... -->" spellcheck="false"></textarea>
+                <textarea id="html-code" class="code-input" placeholder="" spellcheck="false"></textarea>
             </div>
 
-            <!-- Range Selector Control Section (DEFAULT COLLAPSED/HIDDEN) -->
             <div class="range-selector-panel flex-none">
                 <button onclick="toggleRangeSelector()" class="w-full flex justify-between items-center px-4 py-2 text-xs font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100/30 dark:hover:bg-gray-700/30 transition select-none">
                     <span class="flex items-center gap-2 range-text-title">
@@ -342,7 +327,6 @@
                     </div>
                 </button>
                 <div id="range-selector-content" class="hidden px-4 pb-3 pt-1 border-t border-blue-100 dark:border-gray-700/50 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                    <!-- Sliders -->
                     <div class="md:col-span-7 space-y-2">
                         <div class="flex items-center gap-4">
                             <div class="flex-1 flex items-center gap-2">
@@ -359,7 +343,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Stats & Actions -->
                     <div class="md:col-span-5 flex flex-wrap gap-2 justify-end">
                         <div class="text-[11px] text-gray-500 range-text-muted w-full flex justify-between border-b border-blue-100 dark:border-gray-700/50 pb-1 mb-1">
                             <span>Selected: <strong id="range-chars-count" class="text-blue-600 dark:text-blue-400">0</strong> chars</span>
@@ -385,19 +368,15 @@
             </div>
         </div>
 
-        <!-- 2. Live Output Panel (Split into Output and Console) -->
         <div class="output-panel-container flex-1 flex flex-col rounded-xl overflow-hidden shadow-xl border border-blue-200 bg-white relative">
             <div class="flex justify-between items-center output-bar bg-blue-50 border-b border-blue-100 px-3 py-2 flex-none">
-                <!-- Mac-style Dots -->
                 <div class="flex items-center gap-1.5 hidden sm:flex">
                     <div class="w-2.5 h-2.5 rounded-full bg-red-400"></div>
                     <div class="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
                     <div class="w-2.5 h-2.5 rounded-full bg-green-400"></div>
                 </div>
 
-                <!-- Device & Inspect Toggles -->
                 <div class="flex items-center gap-2 mx-auto">
-                    <!-- Inspect Button -->
                     <button id="inspect-btn" onclick="toggleInspectMode()" class="inspect-btn flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-bold transition shadow-sm" title="Element Picker (Inspect)">
                         <i class="fa-solid fa-crosshairs"></i>
                         <span>Inspect</span>
@@ -413,9 +392,7 @@
                     </div>
                 </div>
 
-                <!-- Right Side Actions with Help Information Widget -->
                 <div class="flex items-center gap-2 relative">
-                    <!-- Explain Sandbox Limits Tooltip Button -->
                     <button onclick="toggleInfoTooltip()" class="text-amber-500 hover:text-amber-600 px-2 py-1 transition text-sm relative" title="ஏன் சில குறியீடுகள் இங்கு வேலை செய்யவில்லை?">
                         <i class="fa-solid fa-circle-info animate-pulse"></i>
                     </button>
@@ -427,7 +404,6 @@
                         <i class="fa-solid fa-expand"></i>
                     </button>
 
-                    <!-- Embedded Informative Tooltip Menu -->
                     <div id="info-tooltip" class="hidden absolute right-0 top-10 w-72 bg-white dark:bg-gray-800 border border-blue-200 dark:border-gray-700 p-4 rounded-xl shadow-2xl z-50 text-xs">
                         <h4 class="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 mb-1.5">
                             <i class="fa-solid fa-triangle-exclamation"></i> பாதுகாப்பு கட்டுப்பாடுகள் (Sandbox Limits)
@@ -446,19 +422,39 @@
                 </div>
             </div>
 
-            <!-- Inspect Info Bar & Parent/Child Breadcrumb Navigator Bar -->
-            <div id="inspect-info-bar" class="hidden bg-gray-900 text-blue-300 text-xs px-3 py-1.5 border-b border-gray-800 font-mono flex items-center justify-between">
-                <div class="flex items-center gap-2 min-w-0 flex-1 mr-2">
+            <div id="inspect-info-bar" class="hidden bg-gray-900 text-blue-300 text-xs px-3 py-1.5 border-b border-gray-800 font-mono flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0 flex-1">
                     <span class="text-gray-400 font-sans font-bold text-[11px] uppercase tracking-wider shrink-0">Selected:</span>
-                    <!-- Interactive Breadcrumb Hierarchy Wrapper -->
                     <div id="breadcrumb-container" class="flex items-center gap-1 overflow-x-auto whitespace-nowrap py-0.5 max-w-full">
                         <span id="inspect-element-tag" class="text-amber-400 font-bold">none</span>
                     </div>
                 </div>
-                <span id="inspect-status-msg" class="text-[11px] text-gray-400 font-sans italic shrink-0 hidden sm:inline">Click an element to map source code</span>
+
+                <div id="related-code-panel" class="flex items-center gap-1.5 bg-gray-800/80 px-2 py-1 rounded-lg border border-gray-700/60 shrink-0 select-none">
+                    <span class="text-[10px] text-gray-400 font-sans font-semibold mr-0.5">RELATED:</span>
+                    
+                    <button id="related-btn-html" onclick="clickRelatedTab('html')" class="px-2 py-0.5 rounded text-[11px] font-bold bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition flex items-center gap-1" title="Jump to HTML Source">
+                        <i class="fa-brands fa-html5 text-orange-400"></i> HTML <span id="related-count-html" class="text-orange-300">✓</span>
+                    </button>
+                    
+                    <div class="relative inline-block">
+                        <button id="related-btn-css" onclick="clickRelatedTab('css')" class="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition flex items-center gap-1" title="Jump to Related CSS">
+                            <i class="fa-brands fa-css3-alt text-blue-400"></i> CSS <span id="related-count-css" class="bg-blue-600/50 px-1 rounded text-[10px] text-blue-200">0</span>
+                        </button>
+                        <div id="related-dropdown-css" class="hidden absolute right-0 top-full mt-1 w-52 bg-gray-800 border border-gray-700 rounded-md shadow-2xl z-50 py-1 max-h-40 overflow-y-auto"></div>
+                    </div>
+
+                    <div class="relative inline-block">
+                        <button id="related-btn-js" onclick="clickRelatedTab('js')" class="px-2 py-0.5 rounded text-[11px] font-bold bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition flex items-center gap-1" title="Jump to Related JS">
+                            <i class="fa-brands fa-js text-yellow-400"></i> JS <span id="related-count-js" class="bg-yellow-600/50 px-1 rounded text-[10px] text-yellow-200">0</span>
+                        </button>
+                        <div id="related-dropdown-js" class="hidden absolute right-0 top-full mt-1 w-56 bg-gray-800 border border-gray-700 rounded-md shadow-2xl z-50 py-1 max-h-40 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <span id="inspect-status-msg" class="text-[11px] text-gray-400 font-sans italic shrink-0 hidden lg:inline">Click an element to map source code</span>
             </div>
             
-            <!-- Iframe Output Area (Upgraded with sandboxing and device privileges) -->
             <div class="output-wrapper">
                 <iframe id="output-frame" class="w-full h-full" 
                         sandbox="allow-downloads allow-forms allow-modals allow-pointer-lock allow-popups allow-presentation allow-same-origin allow-scripts" 
@@ -466,7 +462,6 @@
                 </iframe>
             </div>
 
-            <!-- Console Bar -->
             <div class="flex-none bg-gray-900 text-white p-1 flex justify-between items-center text-xs border-t border-blue-200">
                 <span class="font-bold ml-1 flex items-center gap-1.5">
                     <i class="fa-solid fa-terminal text-blue-400"></i> CONSOLE OUTPUT
@@ -475,13 +470,11 @@
                     <button onclick="clearConsole()" class="text-xs text-gray-400 hover:text-white px-1 py-0.5 transition" title="Clear Console">
                         <i class="fa-solid fa-xmark mr-1"></i> Clear
                     </button>
-                    <!-- Console Hide/Show Toggle Button -->
                     <button onclick="toggleConsolePanel()" id="console-toggle-btn" class="text-xs text-gray-400 hover:text-white px-1 py-0.5 transition" title="Hide/Show Console">
                         <i id="console-toggle-icon" class="fa-solid fa-angle-up"></i>
                     </button>
                 </div>
             </div>
-            <!-- Console Output Panel (DEFAULT COLLAPSED/HIDDEN) -->
             <div id="console-output-wrapper" class="flex-none h-[150px] console-hidden">
                 <pre id="console-output" class="h-full"></pre>
             </div>
@@ -489,7 +482,6 @@
 
     </div>
 
-    <!-- Custom Toast Notification -->
     <div id="toast" class="fixed bottom-5 right-5 bg-blue-900 text-white px-4 py-2 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
         செயல் வெற்றிகரமாக முடிந்தது!
     </div>
@@ -533,12 +525,24 @@
         let isInspectActive = false;
         let globalSourceMap = {};
 
+        // STEP 4: Selected Element State Object
+        let selectedElementState = {
+            devId: null,
+            tagName: '',
+            id: '',
+            classes: [],
+            inlineEvents: [],
+            htmlRange: null,
+            cssMatches: [],
+            jsMatches: []
+        };
+
         // Multi-file state storage
         const codeStore = {
-            html: `<div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg text-center">\n    <h1 class="text-3xl font-bold text-blue-600">Dev Edtr Pro</h1>\n    <p class="mt-2 text-gray-600 text-sm">HTML, CSS மற்றும் JavaScript தனித்தனியாக இயங்கும் வசதி!</p>\n    <button id="demoBtn" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Click Me</button>\n</div>`,
-            css: `body {\n    background-color: #f3f4f6;\n    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n    padding: 2rem;\n}`,
-            js: `document.getElementById('demoBtn').addEventListener('click', () => {\n    console.log("பட்டன் கிளிக் செய்யப்பட்டது!");\n    alert("Dev Edtr Pro சிறப்பாக இயங்குகிறது!");\n});`,
-            single: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"><\/script>\n    <title>Dev Edtr Single File</title>\n    <style>\n        body { background-color: #eff6ff; padding: 2rem; }\n    </style>\n</head>\n<body>\n    <div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">\n        <h1 class="text-2xl font-bold text-blue-600">Single HTML Mode</h1>\n        <p class="mt-2 text-sm text-gray-600">ஒரே HTML கோப்பில் CSS மற்றும் JS இணைந்து இயங்கும் பார்வை.</p>\n    </div>\n</body>\n</html>`
+            html: `<div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg text-center">\n    <h1 class="text-3xl font-bold text-blue-600">Dev Edtr Pro</h1>\n    <p class="mt-2 text-gray-600 text-sm">HTML, CSS மற்றும் JavaScript தனித்தனியாக இயங்கும் வசதி!</p>\n    <button id="testBtn" class="test-btn primary-btn mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">\n        <span>Button 3</span>\n    </button>\n</div>`,
+            css: `body {\n    background-color: #f3f4f6;\n    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n    padding: 2rem;\n}\n\nbutton {\n    cursor: pointer;\n}\n\n#testBtn {\n    font-weight: 600;\n}\n\n.test-btn {\n    border: none;\n}\n\n.primary-btn {\n    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);\n}\n\n.card .test-btn {\n    display: inline-block;\n}\n\n#testBtn:hover {\n    transform: translateY(-1px);\n}`,
+            js: `const testBtn = document.getElementById('testBtn');\nif (testBtn) {\n    testBtn.addEventListener('click', () => {\n        console.log("பட்டன் கிளிக் செய்யப்பட்டது!");\n        alert("Dev Edtr Pro சிறப்பாக இயங்குகிறது!");\n    });\n}`,
+            single: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"><\/script>\n    <title>Dev Edtr Single File</title>\n    <style>\n        body { background-color: #eff6ff; padding: 2rem; }\n        #testBtn { background-color: #2563eb; color: white; }\n        .test-btn { border-radius: 0.5rem; }\n    </style>\n</head>\n<body>\n    <div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">\n        <h1 class="text-2xl font-bold text-blue-600">Single HTML Mode</h1>\n        <p class="mt-2 text-sm text-gray-600">ஒரே HTML கோப்பில் CSS மற்றும் JS இணைந்து இயங்கும் பார்வை.</p>\n        <button id="testBtn" class="test-btn mt-4 px-4 py-2" onclick="handleClick()">\n            <span>Button 3</span>\n        </button>\n    </div>\n    <script>\n        function handleClick() {\n            const btn = document.querySelector('#testBtn');\n            console.log("Saving data...", btn);\n        }\n    <\/script>\n</body>\n</html>`
         };
 
         // Debounce Logic
@@ -778,9 +782,7 @@
                 const openAngle = rawHtml.indexOf('<', pos);
                 if (openAngle === -1) break;
 
-                // Skip HTML Comment <!-- ... -->
-                if (rawHtml.startsWith('<!--', openAngle)) {
-                    const commentEnd = rawHtml.indexOf('-->', openAngle + 4);
+                // Skip HTML Comment if (rawHtml.startsWith('', openAngle + 4);
                     if (commentEnd !== -1) pos = commentEnd + 3;
                     else pos = len;
                     continue;
@@ -920,11 +922,218 @@
             return { injectedHtml, sourceMap };
         }
 
+        // --- STEP 4: CSS AND JS MATCHING & PARSING ENGINES ---
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function matchesCssSelector(selectorText, elementInfo) {
+            const { tagName, id, classes } = elementInfo;
+            if (!selectorText) return false;
+
+            const subSelectors = selectorText.split(',');
+            for (let sub of subSelectors) {
+                sub = sub.trim();
+                if (!sub) continue;
+
+                // Strip pseudo classes/elements
+                const cleanSub = sub.replace(/::?[a-zA-Z0-9_-]+(\([^\)]*\))?/g, '').trim();
+
+                // Match ID
+                if (id && cleanSub.includes('#' + id)) return true;
+
+                // Match Classes
+                for (const cls of classes) {
+                    if (cls) {
+                        const classRegex = new RegExp('\\.' + escapeRegExp(cls) + '($|[\\s>+~.:#\\[])');
+                        if (classRegex.test(cleanSub)) return true;
+                    }
+                }
+
+                // Match Tag Name
+                if (tagName) {
+                    const tagRegex = new RegExp('(^|[\\s>+~,])' + escapeRegExp(tagName) + '($|[\\s>+~.:#\\[])', 'i');
+                    if (tagRegex.test(cleanSub)) return true;
+                }
+            }
+            return false;
+        }
+
+        function findRelatedCssRules(cssText, elementInfo, baseOffset = 0) {
+            const matches = [];
+            if (!cssText || typeof cssText !== 'string') return matches;
+
+            let idx = 0;
+            const len = cssText.length;
+            let selectorStart = 0;
+
+            while (idx < len) {
+                // Skip CSS Comments
+                if (cssText.startsWith('/*', idx)) {
+                    const commentEnd = cssText.indexOf('*/', idx + 2);
+                    idx = commentEnd !== -1 ? commentEnd + 2 : len;
+                    selectorStart = idx;
+                    continue;
+                }
+
+                if (cssText[idx] === '{') {
+                    const rawSelector = cssText.substring(selectorStart, idx).trim();
+                    let braceCount = 1;
+                    let bodyIdx = idx + 1;
+
+                    while (bodyIdx < len && braceCount > 0) {
+                        if (cssText.startsWith('/*', bodyIdx)) {
+                            const cEnd = cssText.indexOf('*/', bodyIdx + 2);
+                            bodyIdx = cEnd !== -1 ? cEnd + 2 : len;
+                            continue;
+                        }
+                        if (cssText[bodyIdx] === '{') braceCount++;
+                        else if (cssText[bodyIdx] === '}') braceCount--;
+                        bodyIdx++;
+                    }
+
+                    const ruleEnd = bodyIdx;
+
+                    if (rawSelector && !rawSelector.startsWith('@')) {
+                        if (matchesCssSelector(rawSelector, elementInfo)) {
+                            const displayLabel = rawSelector.replace(/\s+/g, ' ').slice(0, 35);
+                            let startPos = selectorStart;
+                            while (startPos < idx && /\s/.test(cssText[startPos])) startPos++;
+
+                            matches.push({
+                                label: displayLabel,
+                                start: baseOffset + startPos,
+                                end: baseOffset + ruleEnd
+                            });
+                        }
+                    }
+
+                    idx = bodyIdx;
+                    selectorStart = idx;
+                } else {
+                    if (cssText[idx] === '}' || cssText[idx] === ';') {
+                        selectorStart = idx + 1;
+                    }
+                    idx++;
+                }
+            }
+
+            return matches;
+        }
+
+        function findRelatedJsRanges(jsText, elementInfo, baseOffset = 0) {
+            const matches = [];
+            if (!jsText || typeof jsText !== 'string') return matches;
+
+            const { id, classes, inlineEvents } = elementInfo;
+            const searchTerms = [];
+
+            if (id) {
+                searchTerms.push({ term: `'${id}'`, label: `'${id}'` });
+                searchTerms.push({ term: `"${id}"`, label: `"${id}"` });
+                searchTerms.push({ term: '`' + id + '`', label: `\`${id}\`` });
+                searchTerms.push({ term: `#${id}`, label: `#${id}` });
+                searchTerms.push({ term: id, label: id, isPlainId: true });
+            }
+            for (const cls of classes) {
+                if (cls) {
+                    searchTerms.push({ term: `'${cls}'`, label: `'${cls}'` });
+                    searchTerms.push({ term: `"${cls}"`, label: `"${cls}"` });
+                    searchTerms.push({ term: `.${cls}`, label: `.${cls}` });
+                }
+            }
+            for (const fn of inlineEvents) {
+                if (fn) {
+                    searchTerms.push({ term: fn, label: `function ${fn}()`, isFn: true });
+                }
+            }
+
+            if (searchTerms.length === 0) return matches;
+
+            const lines = jsText.split('\n');
+            let currentPos = 0;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const lineStart = currentPos;
+                const lineEnd = currentPos + line.length;
+                currentPos += line.length + 1;
+
+                if (!line.trim() || line.trim().startsWith('//')) continue;
+
+                for (const st of searchTerms) {
+                    if (st.isFn) {
+                        const fnRegex = new RegExp('(function\\s+' + escapeRegExp(st.term) + '|' + escapeRegExp(st.term) + '\\s*=\\s*|' + escapeRegExp(st.term) + '\\s*\\()');
+                        if (fnRegex.test(line)) {
+                            matches.push({
+                                label: `${st.label} (Line ${i + 1})`,
+                                start: baseOffset + lineStart,
+                                end: baseOffset + lineEnd
+                            });
+                            break;
+                        }
+                    } else if (st.isPlainId) {
+                        const idRegex = new RegExp('\\b' + escapeRegExp(st.term) + '\\b');
+                        if (idRegex.test(line)) {
+                            matches.push({
+                                label: `${st.term} (Line ${i + 1})`,
+                                start: baseOffset + lineStart,
+                                end: baseOffset + lineEnd
+                            });
+                            break;
+                        }
+                    } else {
+                        if (line.includes(st.term)) {
+                            matches.push({
+                                label: `${st.label} (Line ${i + 1})`,
+                                start: baseOffset + lineStart,
+                                end: baseOffset + lineEnd
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return matches;
+        }
+
+        function extractBlocksFromSingleHtml(singleHtml, tagName) {
+            const blocks = [];
+            if (!singleHtml) return blocks;
+
+            const lower = singleHtml.toLowerCase();
+            const openTag = `<${tagName}`;
+            const closeTag = `</${tagName}>`;
+            let pos = 0;
+
+            while (pos < singleHtml.length) {
+                const openIdx = lower.indexOf(openTag, pos);
+                if (openIdx === -1) break;
+
+                const contentStart = lower.indexOf('>', openIdx);
+                if (contentStart === -1) break;
+
+                const closeIdx = lower.indexOf(closeTag, contentStart);
+                if (closeIdx === -1) break;
+
+                const content = singleHtml.substring(contentStart + 1, closeIdx);
+                blocks.push({
+                    content: content,
+                    startOffset: contentStart + 1
+                });
+
+                pos = closeIdx + closeTag.length;
+            }
+
+            return blocks;
+        }
+
         function getCompiledHTML(includeInspectScript = true) {
             // Sync current editor to state first
             codeStore[activeTab] = htmlCode.value;
 
-            // Script payload injected inside iframe for Inspect, Breadcrumbs & Selection Mapping
+            // Script payload injected inside iframe for Inspect, Breadcrumbs, Element Details & Selection Mapping
             const inspectInjectionScript = includeInspectScript ? `
     <script>
     (function() {
@@ -980,6 +1189,28 @@
             return label;
         }
 
+        function extractElementDetails(el) {
+            const inlineEvents = [];
+            if (el.attributes) {
+                for (const attr of el.attributes) {
+                    if (attr.name.startsWith('on')) {
+                        const fnMatch = attr.value.match(/([a-zA-Z0-9_$]+)\s*\(/);
+                        if (fnMatch) {
+                            inlineEvents.push(fnMatch[1]);
+                        } else if (attr.value.trim()) {
+                            inlineEvents.push(attr.value.trim());
+                        }
+                    }
+                }
+            }
+            return {
+                tagName: el.tagName.toLowerCase(),
+                id: el.id || '',
+                classes: Array.from(el.classList || []),
+                inlineEvents: inlineEvents
+            };
+        }
+
         function getBreadcrumbHierarchy(el) {
             const hierarchy = [];
             let curr = el;
@@ -1016,11 +1247,13 @@
                     updateOverlay(selectedEl, selectBox);
                     tempHoverBox.style.display = 'none';
                     const hierarchy = getBreadcrumbHierarchy(selectedEl);
+                    const details = extractElementDetails(selectedEl);
                     window.parent.postMessage({
                         type: 'DEV_EDTR_ELEMENT_SELECTED',
                         devId: devId,
                         tagInfo: formatElementLabel(selectedEl),
-                        hierarchy: hierarchy
+                        hierarchy: hierarchy,
+                        elementDetails: details
                     }, '*');
                 }
             } else if (e.data && e.data.type === 'DEV_EDTR_TEMP_HOVER_DEVID') {
@@ -1058,12 +1291,14 @@
 
             const devId = selectedEl.getAttribute('data-dev-edtr-id') || selectedEl.closest('[data-dev-edtr-id]')?.getAttribute('data-dev-edtr-id');
             const hierarchy = getBreadcrumbHierarchy(selectedEl);
+            const details = extractElementDetails(selectedEl);
 
             window.parent.postMessage({
                 type: 'DEV_EDTR_ELEMENT_SELECTED',
                 devId: devId,
                 tagInfo: formatElementLabel(selectedEl),
-                hierarchy: hierarchy
+                hierarchy: hierarchy,
+                elementDetails: details
             }, '*');
         }, true);
 
@@ -1163,6 +1398,153 @@ ${codeStore.js}
             }
         }
 
+        // --- STEP 4: RELATED CODE UI RENDERER & TAB HANDLERS ---
+        function scrollEditorToOffset(offset) {
+            const currentSourceCode = htmlCode.value;
+            const linesBefore = currentSourceCode.substring(0, offset).split('\n').length;
+            const totalLines = currentSourceCode.split('\n').length;
+            if (totalLines > 0) {
+                const scrollRatio = Math.max(0, (linesBefore - 1) / totalLines);
+                htmlCode.scrollTop = htmlCode.scrollHeight * scrollRatio;
+            }
+        }
+
+        window.clickRelatedTab = function(type) {
+            const cssDropdown = document.getElementById('related-dropdown-css');
+            const jsDropdown = document.getElementById('related-dropdown-js');
+
+            if (type === 'html') {
+                if (cssDropdown) cssDropdown.classList.add('hidden');
+                if (jsDropdown) jsDropdown.classList.add('hidden');
+
+                if (currentMode === 'multi' && activeTab !== 'html') {
+                    switchTab('html');
+                } else if (currentMode === 'single' && activeTab !== 'single') {
+                    switchTab('single');
+                }
+
+                if (selectedElementState.htmlRange) {
+                    const range = selectedElementState.htmlRange;
+                    htmlCode.focus();
+                    htmlCode.setSelectionRange(range.start, range.end);
+                    scrollEditorToOffset(range.start);
+                } else {
+                    showToast("HTML source range கிடைக்கவில்லை", true);
+                }
+            } else if (type === 'css') {
+                if (jsDropdown) jsDropdown.classList.add('hidden');
+
+                const matches = selectedElementState.cssMatches || [];
+                if (matches.length === 0) {
+                    showToast("தொடர்புடைய CSS விதிகள் எதுவும் காணப்படவில்லை");
+                    if (cssDropdown) cssDropdown.classList.add('hidden');
+                    return;
+                }
+
+                if (matches.length === 1) {
+                    if (cssDropdown) cssDropdown.classList.add('hidden');
+                    selectCssMatch(matches[0]);
+                } else {
+                    if (cssDropdown) {
+                        cssDropdown.classList.toggle('hidden');
+                    }
+                }
+            } else if (type === 'js') {
+                if (cssDropdown) cssDropdown.classList.add('hidden');
+
+                const matches = selectedElementState.jsMatches || [];
+                if (matches.length === 0) {
+                    showToast("தொடர்புடைய JS குறிப்புகள் எதுவும் காணப்படவில்லை");
+                    if (jsDropdown) jsDropdown.classList.add('hidden');
+                    return;
+                }
+
+                if (matches.length === 1) {
+                    if (jsDropdown) jsDropdown.classList.add('hidden');
+                    selectJsMatch(matches[0]);
+                } else {
+                    if (jsDropdown) {
+                        jsDropdown.classList.toggle('hidden');
+                    }
+                }
+            }
+        };
+
+        window.selectCssMatch = function(match) {
+            const cssDropdown = document.getElementById('related-dropdown-css');
+            if (cssDropdown) cssDropdown.classList.add('hidden');
+
+            if (currentMode === 'multi' && activeTab !== 'css') {
+                switchTab('css');
+            } else if (currentMode === 'single' && activeTab !== 'single') {
+                switchTab('single');
+            }
+
+            htmlCode.focus();
+            htmlCode.setSelectionRange(match.start, match.end);
+            scrollEditorToOffset(match.start);
+        };
+
+        window.selectJsMatch = function(match) {
+            const jsDropdown = document.getElementById('related-dropdown-js');
+            if (jsDropdown) jsDropdown.classList.add('hidden');
+
+            if (currentMode === 'multi' && activeTab !== 'js') {
+                switchTab('js');
+            } else if (currentMode === 'single' && activeTab !== 'single') {
+                switchTab('single');
+            }
+
+            htmlCode.focus();
+            htmlCode.setSelectionRange(match.start, match.end);
+            scrollEditorToOffset(match.start);
+        };
+
+        function updateRelatedCodePanel() {
+            const countCss = document.getElementById('related-count-css');
+            const countJs = document.getElementById('related-count-js');
+            const dropdownCss = document.getElementById('related-dropdown-css');
+            const dropdownJs = document.getElementById('related-dropdown-js');
+
+            const cssMatches = selectedElementState.cssMatches || [];
+            const jsMatches = selectedElementState.jsMatches || [];
+
+            if (countCss) countCss.textContent = cssMatches.length;
+            if (countJs) countJs.textContent = jsMatches.length;
+
+            if (dropdownCss) {
+                dropdownCss.innerHTML = '';
+                if (cssMatches.length > 0) {
+                    cssMatches.forEach((m) => {
+                        const item = document.createElement('div');
+                        item.className = 'px-3 py-1.5 hover:bg-gray-700 text-blue-300 font-mono text-[11px] cursor-pointer truncate border-b border-gray-700/50 last:border-none';
+                        item.textContent = m.label;
+                        item.onclick = (e) => {
+                            e.stopPropagation();
+                            selectCssMatch(m);
+                        };
+                        dropdownCss.appendChild(item);
+                    });
+                }
+            }
+
+            if (dropdownJs) {
+                dropdownJs.innerHTML = '';
+                if (jsMatches.length > 0) {
+                    jsMatches.forEach((m) => {
+                        const item = document.createElement('div');
+                        item.className = 'px-3 py-1.5 hover:bg-gray-700 text-yellow-300 font-mono text-[11px] cursor-pointer truncate border-b border-gray-700/50 last:border-none';
+                        item.textContent = m.label;
+                        item.onclick = (e) => {
+                            e.stopPropagation();
+                            selectJsMatch(m);
+                        };
+                        dropdownJs.appendChild(item);
+                    });
+                }
+            }
+        }
+
         // --- BREADCRUMB UI RENDERER & INTERACTION HANDLER ---
         function renderBreadcrumbs(hierarchy, currentDevId) {
             const container = document.getElementById('breadcrumb-container');
@@ -1186,7 +1568,6 @@ ${codeStore.js}
                 }`;
                 btn.textContent = item.label;
 
-                // Mouse Click Action - Re-select exact element via original mapping
                 btn.onclick = (e) => {
                     e.stopPropagation();
                     if (item.devId) {
@@ -1194,7 +1575,6 @@ ${codeStore.js}
                     }
                 };
 
-                // Mouse Hover Action - Temporary green outline overlay on iframe preview
                 btn.onmouseenter = () => {
                     if (item.devId && outputFrame.contentWindow) {
                         outputFrame.contentWindow.postMessage({
@@ -1223,55 +1603,91 @@ ${codeStore.js}
                 }
             });
 
-            // Scroll breadcrumbs to end to show deepest active child
             container.scrollLeft = container.scrollWidth;
         }
 
         function selectElementByDevId(devId) {
-            const statusMsg = document.getElementById('inspect-status-msg');
+            if (outputFrame.contentWindow) {
+                outputFrame.contentWindow.postMessage({
+                    type: 'DEV_EDTR_HIGHLIGHT_BY_DEVID',
+                    devId: devId
+                }, '*');
+            }
+        }
 
-            // Switch to appropriate HTML Editor Tab
-            if (currentMode === 'multi' && activeTab !== 'html') {
-                switchTab('html');
-            } else if (currentMode === 'single' && activeTab !== 'single') {
-                switchTab('single');
+        function parseTagInfoFallback(tagInfo) {
+            if (!tagInfo) return { tagName: '', id: '', classes: [], inlineEvents: [] };
+            let tagName = tagInfo;
+            let id = '';
+            const classes = [];
+
+            if (tagInfo.includes('#')) {
+                const parts = tagInfo.split('#');
+                tagName = parts[0];
+                const rest = parts[1];
+                if (rest.includes('.')) {
+                    const subParts = rest.split('.');
+                    id = subParts[0];
+                    classes.push(...subParts.slice(1));
+                } else {
+                    id = rest;
+                }
+            } else if (tagInfo.includes('.')) {
+                const parts = tagInfo.split('.');
+                tagName = parts[0];
+                classes.push(...parts.slice(1));
             }
 
-            if (devId && globalSourceMap[devId]) {
-                const range = globalSourceMap[devId];
-                if (statusMsg) statusMsg.textContent = "Exact HTML Source mapped!";
-
-                htmlCode.focus();
-                htmlCode.setSelectionRange(range.start, range.end);
-
-                // Auto Scroll Editor to Source Location
-                const currentSourceCode = htmlCode.value;
-                const linesBefore = currentSourceCode.substring(0, range.start).split('\n').length;
-                const totalLines = currentSourceCode.split('\n').length;
-                if (totalLines > 0) {
-                    const scrollRatio = Math.max(0, (linesBefore - 1) / totalLines);
-                    htmlCode.scrollTop = htmlCode.scrollHeight * scrollRatio;
-                }
-
-                // Instruct iframe preview to highlight target element
-                if (outputFrame.contentWindow) {
-                    outputFrame.contentWindow.postMessage({
-                        type: 'DEV_EDTR_HIGHLIGHT_BY_DEVID',
-                        devId: devId
-                    }, '*');
-                }
-            } else {
-                if (statusMsg) statusMsg.textContent = "Runtime Generated Element — direct HTML source not found";
-                showToast("Runtime Element — direct HTML source not found", true);
-            }
+            return { tagName, id, classes, inlineEvents: [] };
         }
 
         // Handle Messages Posted from Output Iframe
         window.addEventListener('message', (event) => {
             if (event.data && event.data.type === 'DEV_EDTR_ELEMENT_SELECTED') {
-                const { devId, tagInfo, hierarchy } = event.data;
+                const { devId, tagInfo, hierarchy, elementDetails } = event.data;
                 
+                const details = elementDetails || parseTagInfoFallback(tagInfo);
+
+                // Compute exact HTML Range
+                let htmlRange = null;
+                if (devId && globalSourceMap[devId]) {
+                    htmlRange = globalSourceMap[devId];
+                }
+
+                // Compute Related CSS & JS matches
+                let cssMatches = [];
+                let jsMatches = [];
+
+                if (currentMode === 'multi') {
+                    cssMatches = findRelatedCssRules(codeStore.css, details, 0);
+                    jsMatches = findRelatedJsRanges(codeStore.js, details, 0);
+                } else {
+                    const singleCode = codeStore.single || htmlCode.value;
+                    const styleBlocks = extractBlocksFromSingleHtml(singleCode, 'style');
+                    styleBlocks.forEach(sb => {
+                        cssMatches.push(...findRelatedCssRules(sb.content, details, sb.startOffset));
+                    });
+                    const scriptBlocks = extractBlocksFromSingleHtml(singleCode, 'script');
+                    scriptBlocks.forEach(scb => {
+                        jsMatches.push(...findRelatedJsRanges(scb.content, details, scb.startOffset));
+                    });
+                }
+
+                // Update Step 4 State Object
+                selectedElementState = {
+                    devId: devId,
+                    tagName: details.tagName,
+                    id: details.id,
+                    classes: details.classes,
+                    inlineEvents: details.inlineEvents,
+                    htmlRange: htmlRange,
+                    cssMatches: cssMatches,
+                    jsMatches: jsMatches
+                };
+
+                // Render Breadcrumbs and Related Code Panel
                 renderBreadcrumbs(hierarchy, devId);
+                updateRelatedCodePanel();
 
                 // Ensure correct HTML Tab is active
                 if (currentMode === 'multi' && activeTab !== 'html') {
@@ -1282,21 +1698,11 @@ ${codeStore.js}
 
                 const statusMsg = document.getElementById('inspect-status-msg');
 
-                if (devId && globalSourceMap[devId]) {
-                    const range = globalSourceMap[devId];
+                if (htmlRange) {
                     if (statusMsg) statusMsg.textContent = "Exact HTML Source mapped!";
-                    
                     htmlCode.focus();
-                    htmlCode.setSelectionRange(range.start, range.end);
-
-                    // Scroll editor to highlighted code block
-                    const currentSourceCode = htmlCode.value;
-                    const linesBefore = currentSourceCode.substring(0, range.start).split('\n').length;
-                    const totalLines = currentSourceCode.split('\n').length;
-                    if (totalLines > 0) {
-                        const scrollRatio = Math.max(0, (linesBefore - 1) / totalLines);
-                        htmlCode.scrollTop = htmlCode.scrollHeight * scrollRatio;
-                    }
+                    htmlCode.setSelectionRange(htmlRange.start, htmlRange.end);
+                    scrollEditorToOffset(htmlRange.start);
                 } else {
                     if (statusMsg) statusMsg.textContent = "Runtime Generated Element — direct HTML source not found";
                     showToast("Runtime Element — direct HTML source not found", true);
@@ -1537,7 +1943,7 @@ ${codeStore.js}
             const joinedTarget = targetLines.join('\n');
             
             let resultText;
-            const isCommented = joinedTarget.trim().startsWith('<!--') && joinedTarget.trim().endsWith('-->');
+            const isCommented = joinedTarget.trim().startsWith('');
             
             if (isCommented) {
                 let unwrapped = joinedTarget.trim();
@@ -1546,7 +1952,7 @@ ${codeStore.js}
                 resultText = lines.join('\n');
                 showToast("கமெண்ட் நீக்கப்பட்டது!");
             } else {
-                const wrapped = `<!-- \n${joinedTarget}\n -->`;
+                const wrapped = ``;
                 lines.splice(start - 1, end - start + 1, wrapped);
                 resultText = lines.join('\n');
                 showToast("கமெண்ட் சேர்க்கப்பட்டது!");
@@ -1585,6 +1991,19 @@ ${codeStore.js}
                 const tooltip = document.getElementById('info-tooltip');
                 if (tooltip && tooltipBtn && !tooltipBtn.contains(event.target) && !tooltip.contains(event.target)) {
                     tooltip.classList.add('hidden');
+                }
+
+                // Step 4: Dropdown outside click handler
+                const cssDropdown = document.getElementById('related-dropdown-css');
+                const jsDropdown = document.getElementById('related-dropdown-js');
+                const cssBtn = document.getElementById('related-btn-css');
+                const jsBtn = document.getElementById('related-btn-js');
+
+                if (cssDropdown && cssBtn && !cssBtn.contains(event.target) && !cssDropdown.contains(event.target)) {
+                    cssDropdown.classList.add('hidden');
+                }
+                if (jsDropdown && jsBtn && !jsBtn.contains(event.target) && !jsDropdown.contains(event.target)) {
+                    jsDropdown.classList.add('hidden');
                 }
             });
 
