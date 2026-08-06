@@ -626,10 +626,10 @@
         let pendingAiReplacement = null;
 
         const codeStore = {
-            html: `<div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg text-center">\n    <h1 class="text-3xl font-bold text-blue-600">Dev Edtr Pro</h1>\n    <p class="mt-2 text-gray-600 text-sm">HTML, CSS மற்றும் JavaScript தனித்தனியாக இயங்கும் வசதி!</p>\n    <button id="testBtn" class="test-btn primary-btn mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">\n        <span>Button 3</span>\n    </button>\n</div>`,
-            css: `body {\n    background-color: #f3f4f6;\n    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n    padding: 2rem;\n}\n\nbutton {\n    cursor: pointer;\n}\n\n#testBtn {\n    font-weight: 600;\n}\n\n.test-btn {\n    border: none;\n}\n\n.primary-btn {\n    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);\n}\n\n.card .test-btn {\n    display: inline-block;\n}\n\n#testBtn:hover {\n    transform: translateY(-1px);\n}`,
-            js: `const testBtn = document.getElementById('testBtn');\nif (testBtn) {\n    testBtn.addEventListener('click', () => {\n        console.log("பட்டன் கிளிக் செய்யப்பட்டது!");\n        alert("Dev Edtr Pro சிறப்பாக இயங்குகிறது!");\n    });\n}`,
-            single: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"><\/script>\n    <title>Dev Edtr Single File</title>\n    <style>\n        body { background-color: #eff6ff; padding: 2rem; }\n        #testBtn { background-color: #2563eb; color: white; }\n        .test-btn { border-radius: 0.5rem; }\n    </style>\n</head>\n<body>\n    <div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">\n        <h1 class="text-2xl font-bold text-blue-600">Single HTML Mode</h1>\n        <p class="mt-2 text-sm text-gray-600">ஒரே HTML கோப்பில் CSS மற்றும் JS இணைந்து இயங்கும் பார்வை.</p>\n        <button id="testBtn" class="test-btn mt-4 px-4 py-2" onclick="handleClick()">\n            <span>Button 3</span>\n        </button>\n    </div>\n    <script>\n        function handleClick() {\n            const btn = document.querySelector('#testBtn');\n            console.log("Saving data...", btn);\n        }\n    <\/script>\n</body>\n</html>`
+            html: `<div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg text-center">\n    <h1 class="text-3xl font-bold text-blue-600">Dev Edtr Pro</h1>\n    <p class="mt-2 text-gray-600 text-sm">HTML, CSS மற்றும் JavaScript தனித்தனியாக இயங்கும் வசதி!</p>\n    <button id="buyBtn" class="buy-btn mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg transition">\n        <span>Buy Now</span>\n    </button>\n</div>`,
+            css: `body {\n    background-color: #f3f4f6;\n    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n    padding: 2rem;\n}\n\n.buy-btn {\n    background: blue;\n    color: white;\n    font-weight: 600;\n    cursor: pointer;\n}\n\n.buy-btn:hover {\n    transform: translateY(-1px);\n}`,
+            js: `const buyBtn = document.getElementById('buyBtn');\nif (buyBtn) {\n    buyBtn.addEventListener('click', () => {\n        alert("Buying");\n    });\n}`,
+            single: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"><\/script>\n    <title>Dev Edtr Single File</title>\n    <style>\n        body { background-color: #eff6ff; padding: 2rem; }\n        .buy-btn { background: blue; color: white; border-radius: 0.5rem; }\n    </style>\n</head>\n<body>\n    <div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">\n        <h1 class="text-2xl font-bold text-blue-600">Single HTML Mode</h1>\n        <button id="buyBtn" class="buy-btn mt-4 px-4 py-2">\n            <span>Buy Now</span>\n        </button>\n    </div>\n    <script>\n        const buyBtn = document.getElementById('buyBtn');\n        if (buyBtn) {\n            buyBtn.addEventListener('click', () => {\n                alert("Buying");\n            });\n        }\n    <\/script>\n</body>\n</html>`
         };
 
         const GEMINI_MODEL_NAME = "gemini-3.6-flash";
@@ -742,7 +742,7 @@
             showToast("Gemini API Key நீக்கப்பட்டது");
         };
 
-       function getSavedApiKey() {
+        function getSavedApiKey() {
             const savedKey = localStorage.getItem('gemini_api_key_dev_edtr');
             if (savedKey && savedKey.trim()) return savedKey.trim();
             const inputEl = document.getElementById('ai-api-key-input');
@@ -817,7 +817,7 @@
             return clean.trim();
         }
 
-       window.requestAiFix = async function() {
+        window.requestAiFix = async function() {
             if (isAiProcessing) return;
 
             let apiKey = getSavedApiKey();
@@ -861,38 +861,57 @@
                 return;
             }
 
-            let externalContext = "";
+            let cssContextText = "";
+            let cssRangeMap = [];
             if (selectedElementState.cssMatches && selectedElementState.cssMatches.length > 0) {
-                const cssSnippets = selectedElementState.cssMatches.map(m => {
-                    const cssSrc = currentMode === 'multi' ? codeStore.css : codeStore.single;
-                    return cssSrc.substring(m.start, m.end);
-                }).join('\n\n');
-                externalContext += `\nRELEVANT CSS CONTEXT:\n${cssSnippets}\n`;
+                const cssSrc = currentMode === 'multi' ? codeStore.css : codeStore.single;
+                selectedElementState.cssMatches.forEach((m, idx) => {
+                    const snippet = cssSrc.substring(m.start, m.end);
+                    cssContextText += `\n--- CSS BLOCK ${idx + 1} ---\n${snippet}\n`;
+                    cssRangeMap.push(m);
+                });
             }
 
+            let jsContextText = "";
+            let jsRangeMap = [];
             if (selectedElementState.jsMatches && selectedElementState.jsMatches.length > 0) {
-                const jsSnippets = selectedElementState.jsMatches.map(m => {
-                    const jsSrc = currentMode === 'multi' ? codeStore.js : codeStore.single;
-                    return jsSrc.substring(m.start, m.end);
-                }).join('\n\n');
-                externalContext += `\nRELEVANT JS CONTEXT:\n${jsSnippets}\n`;
+                const jsSrc = currentMode === 'multi' ? codeStore.js : codeStore.single;
+                selectedElementState.jsMatches.forEach((m, idx) => {
+                    const lines = jsSrc.split('\n');
+                    const lineIdx = lines.findIndex(l => l.includes(m.label.split(' ')[0]));
+                    const blockRange = lineIdx !== -1 ? findJsBlockRange(jsSrc, lineIdx) : { start: m.start, end: m.end };
+                    const snippet = jsSrc.substring(blockRange.start, blockRange.end);
+                    jsContextText += `\n--- JS BLOCK ${idx + 1} ---\n${snippet}\n`;
+                    jsRangeMap.push(blockRange);
+                });
             }
 
-            const promptText = `You are editing one selected code block from an existing web application.
-USER REQUEST: ${instruction}
+            const promptText = `You are a web editor AI assistant. Modify ONLY the layers requested by the user.
 
-SELECTED CODE TO MODIFY:
+USER INSTRUCTION: ${instruction}
+
+--- SELECTED HTML ELEMENT ---
 ${snapshot.originalCode}
-${externalContext}
 
-RULES:
-1. Modify ONLY the supplied SELECTED CODE block.
-2. Do not rewrite unrelated outer HTML or project parts.
-3. Preserve existing IDs and classes unless modification absolutely requires changing them.
-4. Preserve existing JavaScript hooks, event listeners, and attributes.
-5. Do not return any explanations, descriptions, or conversation.
-6. Do NOT wrap returned code in markdown fences (\`\`\`html or \`\`\`).
-7. Return ONLY the direct replacement code string that will replace the selected code.`;
+--- RELEVANT CSS BLOCKS ---
+${cssContextText || "None"}
+
+--- RELEVANT JS BLOCKS ---
+${jsContextText || "None"}
+
+CRITICAL RULES:
+1. Content/Structure changes -> Modify HTML.
+2. Styling/Appearance changes -> Modify CSS (Do NOT use inline style="" if CSS block exists).
+3. Behaviour/Interaction changes -> Modify JS (Do NOT use inline onclick="" if JS handler exists).
+4. Do NOT rewrite unrelated code. Preserve IDs, classes, and structure.
+5. Output MUST be valid JSON strictly matching this schema:
+{
+  "html": "updated html string or null",
+  "css": "updated css string or null",
+  "js": "updated js string or null"
+}
+6. If a layer requires no change, set its value to null.
+7. Return ONLY raw valid JSON. No conversational text.`;
 
             isAiProcessing = true;
             const fixBtn = document.getElementById('ai-fix-btn');
@@ -925,13 +944,27 @@ RULES:
                     throw new Error("Gemini-யிடமிருந்து வெற்று குறியீடு வந்தது.");
                 }
 
+                let parsedAiResult = null;
+                try {
+                    parsedAiResult = JSON.parse(cleanGeneratedCode);
+                } catch (jsonErr) {
+                    throw new Error("AI வழங்கிய பதில் முறையான JSON வடிவில் இல்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.");
+                }
+
                 pendingAiReplacement = {
                     snapshot: { ...snapshot },
-                    aiCode: cleanGeneratedCode
+                    parsedResult: parsedAiResult,
+                    cssRangeMap: cssRangeMap,
+                    jsRangeMap: jsRangeMap
                 };
 
+                let previewSummary = "";
+                if (parsedAiResult.html) previewSummary += `[HTML]:\n${parsedAiResult.html}\n\n`;
+                if (parsedAiResult.css) previewSummary += `[CSS]:\n${parsedAiResult.css}\n\n`;
+                if (parsedAiResult.js) previewSummary += `[JS]:\n${parsedAiResult.js}`;
+
                 document.getElementById('ai-preview-original').textContent = snapshot.originalCode;
-                document.getElementById('ai-preview-modified').textContent = cleanGeneratedCode;
+                document.getElementById('ai-preview-modified').textContent = previewSummary.trim() || "No changes requested.";
                 document.getElementById('ai-preview-container').classList.remove('hidden');
 
                 showToast("AI மாற்றம் தயாராக உள்ளது! Review செய்து Apply Change அழுத்தவும்.");
@@ -950,34 +983,46 @@ RULES:
         window.applyAiChange = function() {
             if (!pendingAiReplacement) return;
 
-            const { snapshot, aiCode } = pendingAiReplacement;
-            const currentSourceCode = htmlCode.value;
+            const { snapshot, parsedResult, cssRangeMap, jsRangeMap } = pendingAiReplacement;
 
-            if (activeTab !== snapshot.tab || currentMode !== snapshot.mode) {
-                showToast("எடிட்டர் நிலை மாறியுள்ளது. AI மாற்றத்தைப் பயன்படுத்த முடியாது.", true);
-                cancelAiChange();
-                return;
+            if (parsedResult.html) {
+                const currentHtml = codeStore.html;
+                const before = currentHtml.slice(0, snapshot.range.start);
+                const after = currentHtml.slice(snapshot.range.end);
+                codeStore.html = before + parsedResult.html + after;
             }
 
-            const currentSegment = currentSourceCode.substring(snapshot.range.start, snapshot.range.end);
-            if (currentSegment !== snapshot.originalCode) {
-                showToast("Source changed while AI was processing. Please select the element again.", true);
-                cancelAiChange();
-                return;
+            if (parsedResult.css) {
+                if (cssRangeMap && cssRangeMap.length > 0) {
+                    const targetRange = cssRangeMap[0];
+                    const currentCss = codeStore.css;
+                    const before = currentCss.slice(0, targetRange.start);
+                    const after = currentCss.slice(targetRange.end);
+                    codeStore.css = before + parsedResult.css + after;
+                } else {
+                    codeStore.css += `\n\n${parsedResult.css}`;
+                }
             }
 
-            const before = currentSourceCode.slice(0, snapshot.range.start);
-            const after = currentSourceCode.slice(snapshot.range.end);
-            const updatedFullSource = before + aiCode + after;
+            if (parsedResult.js) {
+                if (jsRangeMap && jsRangeMap.length > 0) {
+                    const targetRange = jsRangeMap[0];
+                    const currentJs = codeStore.js;
+                    const before = currentJs.slice(0, targetRange.start);
+                    const after = currentJs.slice(targetRange.end);
+                    codeStore.js = before + parsedResult.js + after;
+                } else {
+                    codeStore.js += `\n\n${parsedResult.js}`;
+                }
+            }
 
-            htmlCode.value = updatedFullSource;
-            codeStore[activeTab] = updatedFullSource;
+            htmlCode.value = codeStore[activeTab] || '';
 
             updateOutput();
             saveCodeLocal();
 
             cancelAiChange();
-            showToast("Selected code வெற்றிகரமாக AI மூலம் மாற்றப்பட்டது!");
+            showToast("HTML, CSS & JS மாற்றங்கள் வெற்றிகரமாக Apply செய்யப்பட்டன!");
         };
 
         window.cancelAiChange = function() {
@@ -1392,6 +1437,39 @@ RULES:
             }
 
             return matches;
+        }
+
+        function findJsBlockRange(jsText, startLineIndex) {
+            if (!jsText) return null;
+            const lines = jsText.split('\n');
+            let startPos = 0;
+            for (let i = 0; i < startLineIndex; i++) {
+                startPos += lines[i].length + 1;
+            }
+
+            let braceCount = 0;
+            let foundOpen = false;
+            let endPos = startPos;
+
+            for (let i = startLineIndex; i < lines.length; i++) {
+                const line = lines[i];
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '{') {
+                        braceCount++;
+                        foundOpen = true;
+                    } else if (char === '}') {
+                        braceCount--;
+                    }
+                }
+                endPos += line.length + 1;
+                if (foundOpen && braceCount <= 0) break;
+            }
+
+            return {
+                start: startPos,
+                end: Math.min(endPos, jsText.length)
+            };
         }
 
         function findRelatedJsRanges(jsText, elementInfo, baseOffset = 0) {
