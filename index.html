@@ -178,6 +178,13 @@
             color: #1e40af; 
         }
 
+        /* Inspect Button Active State */
+        .inspect-btn.active {
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+        }
+
         /* Scrollbar customization */
         textarea::-webkit-scrollbar, #console-output::-webkit-scrollbar {
             width: 10px;
@@ -186,6 +193,18 @@
         textarea::-webkit-scrollbar-track { background: #1e1e1e; }
         textarea::-webkit-scrollbar-thumb { background: #60a5fa; border-radius: 5px; }
         textarea::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+        /* Custom scrollbar for breadcrumb bar */
+        #breadcrumb-container::-webkit-scrollbar {
+            height: 4px;
+        }
+        #breadcrumb-container::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        #breadcrumb-container::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 2px;
+        }
         
         /* Dark mode colors for general elements */
         .dark-mode .header { background-color: var(--header-bg); border-color: var(--border-color); }
@@ -376,14 +395,22 @@
                     <div class="w-2.5 h-2.5 rounded-full bg-green-400"></div>
                 </div>
 
-                <!-- Device Toggles -->
-                <div class="flex bg-white border border-blue-100 rounded-lg p-1 gap-1 mx-auto shadow-sm">
-                    <button onclick="setDevice('mobile')" class="device-btn px-2 py-1 rounded text-gray-500 hover:bg-blue-50 transition" title="Mobile (375px)">
-                        <i class="fa-solid fa-mobile-screen"></i>
+                <!-- Device & Inspect Toggles -->
+                <div class="flex items-center gap-2 mx-auto">
+                    <!-- Inspect Button -->
+                    <button id="inspect-btn" onclick="toggleInspectMode()" class="inspect-btn flex items-center gap-1.5 px-3 py-1 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-bold transition shadow-sm" title="Element Picker (Inspect)">
+                        <i class="fa-solid fa-crosshairs"></i>
+                        <span>Inspect</span>
                     </button>
-                    <button onclick="setDevice('desktop')" class="device-btn active px-2 py-1 rounded text-gray-500 hover:bg-blue-50 transition" title="Desktop (100%)">
-                        <i class="fa-solid fa-desktop"></i>
-                    </button>
+
+                    <div class="flex bg-white border border-blue-100 rounded-lg p-1 gap-1 shadow-sm">
+                        <button onclick="setDevice('mobile')" class="device-btn px-2 py-1 rounded text-gray-500 hover:bg-blue-50 transition" title="Mobile (375px)">
+                            <i class="fa-solid fa-mobile-screen"></i>
+                        </button>
+                        <button onclick="setDevice('desktop')" class="device-btn active px-2 py-1 rounded text-gray-500 hover:bg-blue-50 transition" title="Desktop (100%)">
+                            <i class="fa-solid fa-desktop"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Right Side Actions with Help Information Widget -->
@@ -417,6 +444,18 @@
                         </p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Inspect Info Bar & Parent/Child Breadcrumb Navigator Bar -->
+            <div id="inspect-info-bar" class="hidden bg-gray-900 text-blue-300 text-xs px-3 py-1.5 border-b border-gray-800 font-mono flex items-center justify-between">
+                <div class="flex items-center gap-2 min-w-0 flex-1 mr-2">
+                    <span class="text-gray-400 font-sans font-bold text-[11px] uppercase tracking-wider shrink-0">Selected:</span>
+                    <!-- Interactive Breadcrumb Hierarchy Wrapper -->
+                    <div id="breadcrumb-container" class="flex items-center gap-1 overflow-x-auto whitespace-nowrap py-0.5 max-w-full">
+                        <span id="inspect-element-tag" class="text-amber-400 font-bold">none</span>
+                    </div>
+                </div>
+                <span id="inspect-status-msg" class="text-[11px] text-gray-400 font-sans italic shrink-0 hidden sm:inline">Click an element to map source code</span>
             </div>
             
             <!-- Iframe Output Area (Upgraded with sandboxing and device privileges) -->
@@ -489,6 +528,10 @@
         // --- EDITOR MODE & TAB STATE MANAGEMENT ---
         let currentMode = 'multi'; // 'multi' (HTML/CSS/JS) or 'single' (Single HTML)
         let activeTab = 'html';    // 'html', 'css', 'js', or 'single'
+
+        // Inspect Mode State & Global Offset Map
+        let isInspectActive = false;
+        let globalSourceMap = {};
 
         // Multi-file state storage
         const codeStore = {
@@ -701,7 +744,7 @@
         }
 
         window.openNewTab = function() {
-            const compiledHtml = getCompiledHTML();
+            const compiledHtml = getCompiledHTML(false); // Clean HTML without inspect attributes/scripts
             const blob = new Blob([compiledHtml], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
             window.open(url, '_blank');
@@ -713,13 +756,343 @@
             fullscreenButton.innerHTML = isFullscreen ? '<i class="fa-solid fa-compress"></i>' : '<i class="fa-solid fa-expand"></i>';
         }
 
-        function getCompiledHTML() {
+        // --- RAW HTML TOKENIZER & EXACT CHARACTER OFFSET PARSER ---
+        function createHtmlSourceMapAndInjectedHtml(rawHtml) {
+            const sourceMap = {};
+            if (!rawHtml || typeof rawHtml !== 'string') {
+                return { injectedHtml: rawHtml || '', sourceMap };
+            }
+
+            const VOID_TAGS = new Set([
+                'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 
+                'link', 'meta', 'param', 'source', 'track', 'wbr'
+            ]);
+
+            let idCounter = 1;
+            let pos = 0;
+            const len = rawHtml.length;
+            const stack = [];
+            const tagInjections = [];
+
+            while (pos < len) {
+                const openAngle = rawHtml.indexOf('<', pos);
+                if (openAngle === -1) break;
+
+                // Skip HTML Comment <!-- ... -->
+                if (rawHtml.startsWith('<!--', openAngle)) {
+                    const commentEnd = rawHtml.indexOf('-->', openAngle + 4);
+                    if (commentEnd !== -1) pos = commentEnd + 3;
+                    else pos = len;
+                    continue;
+                }
+
+                // Skip DOCTYPE / CDATA <! ... >
+                if (rawHtml.startsWith('<!', openAngle)) {
+                    const docEnd = rawHtml.indexOf('>', openAngle + 2);
+                    if (docEnd !== -1) pos = docEnd + 1;
+                    else pos = len;
+                    continue;
+                }
+
+                // Check End Tag </tagname>
+                if (rawHtml.startsWith('</', openAngle)) {
+                    let endAngle = openAngle + 2;
+                    while (endAngle < len && rawHtml[endAngle] !== '>') endAngle++;
+                    
+                    if (endAngle < len) {
+                        const endTagFull = rawHtml.substring(openAngle, endAngle + 1);
+                        const tagNameMatch = endTagFull.match(/^<\/([a-zA-Z0-9-]+)/);
+                        if (tagNameMatch) {
+                            const tagName = tagNameMatch[1].toLowerCase();
+                            // Match open tag from stack top
+                            for (let i = stack.length - 1; i >= 0; i--) {
+                                if (stack[i].tagName === tagName) {
+                                    const matchedNode = stack[i];
+                                    matchedNode.end = endAngle + 1;
+                                    sourceMap[matchedNode.id] = { start: matchedNode.start, end: matchedNode.end };
+                                    stack.splice(i); // Pop matched tag and unclosed children
+                                    break;
+                                }
+                            }
+                        }
+                        pos = endAngle + 1;
+                    } else {
+                        pos = len;
+                    }
+                    continue;
+                }
+
+                // Check Start Tag <tagname ...>
+                const startTagMatch = rawHtml.substring(openAngle).match(/^<([a-zA-Z0-9-]+)/);
+                if (startTagMatch) {
+                    const tagName = startTagMatch[1].toLowerCase();
+                    const tagStartPos = openAngle;
+
+                    let currentIdx = openAngle + 1 + tagName.length;
+                    let inQuote = null;
+                    let isSelfClosing = false;
+                    let tagEndPos = -1;
+
+                    // Parse attributes handling quoted strings correctly
+                    while (currentIdx < len) {
+                        const char = rawHtml[currentIdx];
+                        if (inQuote) {
+                            if (char === inQuote) inQuote = null;
+                        } else {
+                            if (char === '"' || char === "'") {
+                                inQuote = char;
+                            } else if (char === '>') {
+                                tagEndPos = currentIdx;
+                                if (currentIdx > 0 && rawHtml[currentIdx - 1] === '/') {
+                                    isSelfClosing = true;
+                                }
+                                break;
+                            }
+                        }
+                        currentIdx++;
+                    }
+
+                    if (tagEndPos !== -1) {
+                        const devId = `dev-${idCounter++}`;
+                        let insertIndex = tagEndPos;
+                        if (isSelfClosing && rawHtml[insertIndex - 1] === '/') {
+                            insertIndex = insertIndex - 1;
+                        }
+                        tagInjections.push({
+                            insertIndex: insertIndex,
+                            attrText: ` data-dev-edtr-id="${devId}"`
+                        });
+
+                        const isVoid = VOID_TAGS.has(tagName) || isSelfClosing;
+
+                        if (isVoid) {
+                            sourceMap[devId] = { start: tagStartPos, end: tagEndPos + 1 };
+                        } else {
+                            const node = {
+                                id: devId,
+                                tagName: tagName,
+                                start: tagStartPos,
+                                end: tagEndPos + 1
+                            };
+                            stack.push(node);
+
+                            // Skip internal content for script/style tags
+                            if (tagName === 'script' || tagName === 'style') {
+                                const closeTagSearch = `</${tagName}>`;
+                                const closeIdx = rawHtml.toLowerCase().indexOf(closeTagSearch, tagEndPos + 1);
+                                if (closeIdx !== -1) {
+                                    const closeTagEnd = closeIdx + closeTagSearch.length;
+                                    node.end = closeTagEnd;
+                                    sourceMap[devId] = { start: node.start, end: node.end };
+                                    stack.pop();
+                                    pos = closeTagEnd;
+                                    continue;
+                                } else {
+                                    sourceMap[devId] = { start: node.start, end: len };
+                                    stack.pop();
+                                    pos = len;
+                                    continue;
+                                }
+                            }
+                        }
+
+                        pos = tagEndPos + 1;
+                        continue;
+                    }
+                }
+
+                pos = openAngle + 1;
+            }
+
+            // Flush remaining open tags
+            while (stack.length > 0) {
+                const node = stack.pop();
+                sourceMap[node.id] = { start: node.start, end: node.end };
+            }
+
+            // Inject temporary data-dev-edtr-id attributes into HTML buffer
+            tagInjections.sort((a, b) => b.insertIndex - a.insertIndex);
+            let injectedHtml = rawHtml;
+            for (const inj of tagInjections) {
+                injectedHtml = injectedHtml.slice(0, inj.insertIndex) + inj.attrText + injectedHtml.slice(inj.insertIndex);
+            }
+
+            return { injectedHtml, sourceMap };
+        }
+
+        function getCompiledHTML(includeInspectScript = true) {
             // Sync current editor to state first
             codeStore[activeTab] = htmlCode.value;
 
+            // Script payload injected inside iframe for Inspect, Breadcrumbs & Selection Mapping
+            const inspectInjectionScript = includeInspectScript ? `
+    <script>
+    (function() {
+        let inspectActive = false;
+        let hoveredEl = null;
+        let selectedEl = null;
+
+        const hoverBox = document.createElement('div');
+        hoverBox.style.position = 'absolute';
+        hoverBox.style.pointerEvents = 'none';
+        hoverBox.style.outline = '2px dashed #2563eb';
+        hoverBox.style.backgroundColor = 'rgba(37, 99, 235, 0.1)';
+        hoverBox.style.zIndex = '999999';
+        hoverBox.style.transition = 'all 0.05s ease';
+        hoverBox.style.display = 'none';
+        document.documentElement.appendChild(hoverBox);
+
+        const selectBox = document.createElement('div');
+        selectBox.style.position = 'absolute';
+        selectBox.style.pointerEvents = 'none';
+        selectBox.style.outline = '3px solid #f59e0b';
+        selectBox.style.backgroundColor = 'rgba(245, 158, 11, 0.15)';
+        selectBox.style.zIndex = '999998';
+        selectBox.style.display = 'none';
+        document.documentElement.appendChild(selectBox);
+
+        const tempHoverBox = document.createElement('div');
+        tempHoverBox.style.position = 'absolute';
+        tempHoverBox.style.pointerEvents = 'none';
+        tempHoverBox.style.outline = '2px solid #10b981';
+        tempHoverBox.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        tempHoverBox.style.zIndex = '999999';
+        tempHoverBox.style.display = 'none';
+        document.documentElement.appendChild(tempHoverBox);
+
+        function updateOverlay(el, overlayBox) {
+            if (!el) { overlayBox.style.display = 'none'; return; }
+            const rect = el.getBoundingClientRect();
+            overlayBox.style.top = (rect.top + window.scrollY) + 'px';
+            overlayBox.style.left = (rect.left + window.scrollX) + 'px';
+            overlayBox.style.width = rect.width + 'px';
+            overlayBox.style.height = rect.height + 'px';
+            overlayBox.style.display = 'block';
+        }
+
+        function formatElementLabel(el) {
+            let label = el.tagName.toLowerCase();
+            if (el.id) label += '#' + el.id;
+            if (el.classList && el.classList.length > 0) {
+                const classes = Array.from(el.classList).slice(0, 2).join('.');
+                if (classes) label += '.' + classes;
+            }
+            return label;
+        }
+
+        function getBreadcrumbHierarchy(el) {
+            const hierarchy = [];
+            let curr = el;
+            while (curr && curr !== document.documentElement) {
+                const tag = curr.tagName ? curr.tagName.toLowerCase() : '';
+                if (tag && tag !== 'html' && tag !== 'head') {
+                    const devId = curr.getAttribute('data-dev-edtr-id') || curr.closest('[data-dev-edtr-id]')?.getAttribute('data-dev-edtr-id');
+                    hierarchy.unshift({
+                        devId: devId,
+                        label: formatElementLabel(curr)
+                    });
+                }
+                if (tag === 'body') break;
+                curr = curr.parentElement;
+            }
+            return hierarchy;
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'DEV_EDTR_INSPECT_TOGGLE') {
+                inspectActive = e.data.active;
+                if (!inspectActive) {
+                    hoverBox.style.display = 'none';
+                    selectBox.style.display = 'none';
+                    tempHoverBox.style.display = 'none';
+                    hoveredEl = null;
+                    selectedEl = null;
+                }
+            } else if (e.data && e.data.type === 'DEV_EDTR_HIGHLIGHT_BY_DEVID') {
+                const devId = e.data.devId;
+                const target = document.querySelector(\`[data-dev-edtr-id="\${devId}"]\`);
+                if (target) {
+                    selectedEl = target;
+                    updateOverlay(selectedEl, selectBox);
+                    tempHoverBox.style.display = 'none';
+                    const hierarchy = getBreadcrumbHierarchy(selectedEl);
+                    window.parent.postMessage({
+                        type: 'DEV_EDTR_ELEMENT_SELECTED',
+                        devId: devId,
+                        tagInfo: formatElementLabel(selectedEl),
+                        hierarchy: hierarchy
+                    }, '*');
+                }
+            } else if (e.data && e.data.type === 'DEV_EDTR_TEMP_HOVER_DEVID') {
+                const devId = e.data.devId;
+                if (devId) {
+                    const target = document.querySelector(\`[data-dev-edtr-id="\${devId}"]\`);
+                    if (target) updateOverlay(target, tempHoverBox);
+                } else {
+                    tempHoverBox.style.display = 'none';
+                }
+            }
+        });
+
+        document.addEventListener('mouseover', (e) => {
+            if (!inspectActive) return;
+            e.stopPropagation();
+            if (e.target === hoverBox || e.target === selectBox || e.target === tempHoverBox || e.target === document.documentElement || e.target === document.body) return;
+            hoveredEl = e.target;
+            updateOverlay(hoveredEl, hoverBox);
+        }, true);
+
+        document.addEventListener('mouseout', (e) => {
+            if (!inspectActive) return;
+            hoverBox.style.display = 'none';
+        }, true);
+
+        document.addEventListener('click', (e) => {
+            if (!inspectActive) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.target === hoverBox || e.target === selectBox || e.target === tempHoverBox) return;
+
+            selectedEl = e.target;
+            updateOverlay(selectedEl, selectBox);
+
+            const devId = selectedEl.getAttribute('data-dev-edtr-id') || selectedEl.closest('[data-dev-edtr-id]')?.getAttribute('data-dev-edtr-id');
+            const hierarchy = getBreadcrumbHierarchy(selectedEl);
+
+            window.parent.postMessage({
+                type: 'DEV_EDTR_ELEMENT_SELECTED',
+                devId: devId,
+                tagInfo: formatElementLabel(selectedEl),
+                hierarchy: hierarchy
+            }, '*');
+        }, true);
+
+        window.addEventListener('scroll', () => {
+            if (hoveredEl) updateOverlay(hoveredEl, hoverBox);
+            if (selectedEl) updateOverlay(selectedEl, selectBox);
+        }, true);
+    })();
+    <\/script>` : '';
+
             if (currentMode === 'single') {
-                return codeStore.single;
+                let singleSource = codeStore.single;
+                if (includeInspectScript) {
+                    const { injectedHtml, sourceMap } = createHtmlSourceMapAndInjectedHtml(singleSource);
+                    globalSourceMap = sourceMap;
+                    if (injectedHtml.includes('</body>')) {
+                        return injectedHtml.replace('</body>', `${inspectInjectionScript}\n</body>`);
+                    } else {
+                        return injectedHtml + inspectInjectionScript;
+                    }
+                }
+                return singleSource;
             } else {
+                let htmlContent = codeStore.html;
+                if (includeInspectScript) {
+                    const { injectedHtml, sourceMap } = createHtmlSourceMapAndInjectedHtml(htmlContent);
+                    globalSourceMap = sourceMap;
+                    htmlContent = injectedHtml;
+                }
                 return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -731,10 +1104,11 @@ ${codeStore.css}
     </style>
 </head>
 <body>
-${codeStore.html}
+${htmlContent}
     <script>
 ${codeStore.js}
     <\/script>
+    ${inspectInjectionScript}
 </body>
 </html>`;
             }
@@ -745,14 +1119,190 @@ ${codeStore.js}
             charCount.textContent = `${htmlCode.value.length} chars`;
             updateLineNumbers(); 
 
-            const finalOutput = getCompiledHTML();
+            const finalOutput = getCompiledHTML(true);
             
             outputFrame.contentWindow.document.open();
             outputFrame.contentWindow.document.write(finalOutput);
             outputFrame.contentWindow.document.close();
 
             hijackConsole(outputFrame);
+
+            if (isInspectActive) {
+                setTimeout(() => {
+                    if (outputFrame.contentWindow) {
+                        outputFrame.contentWindow.postMessage({
+                            type: 'DEV_EDTR_INSPECT_TOGGLE',
+                            active: true
+                        }, '*');
+                    }
+                }, 100);
+            }
         }
+
+        // --- VISUAL ELEMENT PICKER TOGGLE ---
+        window.toggleInspectMode = function() {
+            isInspectActive = !isInspectActive;
+            const btn = document.getElementById('inspect-btn');
+            const infoBar = document.getElementById('inspect-info-bar');
+            
+            if (isInspectActive) {
+                btn.classList.add('active');
+                infoBar.classList.remove('hidden');
+                showToast("Inspect Mode Active! Select an element in output.");
+            } else {
+                btn.classList.remove('active');
+                infoBar.classList.add('hidden');
+                showToast("Inspect Mode Deactivated.");
+            }
+
+            if (outputFrame.contentWindow) {
+                outputFrame.contentWindow.postMessage({
+                    type: 'DEV_EDTR_INSPECT_TOGGLE',
+                    active: isInspectActive
+                }, '*');
+            }
+        }
+
+        // --- BREADCRUMB UI RENDERER & INTERACTION HANDLER ---
+        function renderBreadcrumbs(hierarchy, currentDevId) {
+            const container = document.getElementById('breadcrumb-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (!hierarchy || hierarchy.length === 0) {
+                container.innerHTML = `<span id="inspect-element-tag" class="text-amber-400 font-bold">none</span>`;
+                return;
+            }
+
+            hierarchy.forEach((item, index) => {
+                const isLast = index === hierarchy.length - 1;
+                
+                const btn = document.createElement('button');
+                btn.className = `hover:underline cursor-pointer px-1 py-0.5 rounded text-xs font-semibold transition ${
+                    isLast 
+                        ? 'text-amber-400 font-bold bg-amber-400/10' 
+                        : 'text-blue-300 hover:text-white hover:bg-gray-800'
+                }`;
+                btn.textContent = item.label;
+
+                // Mouse Click Action - Re-select exact element via original mapping
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (item.devId) {
+                        selectElementByDevId(item.devId);
+                    }
+                };
+
+                // Mouse Hover Action - Temporary green outline overlay on iframe preview
+                btn.onmouseenter = () => {
+                    if (item.devId && outputFrame.contentWindow) {
+                        outputFrame.contentWindow.postMessage({
+                            type: 'DEV_EDTR_TEMP_HOVER_DEVID',
+                            devId: item.devId
+                        }, '*');
+                    }
+                };
+
+                btn.onmouseleave = () => {
+                    if (outputFrame.contentWindow) {
+                        outputFrame.contentWindow.postMessage({
+                            type: 'DEV_EDTR_TEMP_HOVER_DEVID',
+                            devId: null
+                        }, '*');
+                    }
+                };
+
+                container.appendChild(btn);
+
+                if (!isLast) {
+                    const separator = document.createElement('span');
+                    separator.className = 'text-gray-600 mx-0.5 select-none font-bold text-[10px]';
+                    separator.textContent = '>';
+                    container.appendChild(separator);
+                }
+            });
+
+            // Scroll breadcrumbs to end to show deepest active child
+            container.scrollLeft = container.scrollWidth;
+        }
+
+        function selectElementByDevId(devId) {
+            const statusMsg = document.getElementById('inspect-status-msg');
+
+            // Switch to appropriate HTML Editor Tab
+            if (currentMode === 'multi' && activeTab !== 'html') {
+                switchTab('html');
+            } else if (currentMode === 'single' && activeTab !== 'single') {
+                switchTab('single');
+            }
+
+            if (devId && globalSourceMap[devId]) {
+                const range = globalSourceMap[devId];
+                if (statusMsg) statusMsg.textContent = "Exact HTML Source mapped!";
+
+                htmlCode.focus();
+                htmlCode.setSelectionRange(range.start, range.end);
+
+                // Auto Scroll Editor to Source Location
+                const currentSourceCode = htmlCode.value;
+                const linesBefore = currentSourceCode.substring(0, range.start).split('\n').length;
+                const totalLines = currentSourceCode.split('\n').length;
+                if (totalLines > 0) {
+                    const scrollRatio = Math.max(0, (linesBefore - 1) / totalLines);
+                    htmlCode.scrollTop = htmlCode.scrollHeight * scrollRatio;
+                }
+
+                // Instruct iframe preview to highlight target element
+                if (outputFrame.contentWindow) {
+                    outputFrame.contentWindow.postMessage({
+                        type: 'DEV_EDTR_HIGHLIGHT_BY_DEVID',
+                        devId: devId
+                    }, '*');
+                }
+            } else {
+                if (statusMsg) statusMsg.textContent = "Runtime Generated Element — direct HTML source not found";
+                showToast("Runtime Element — direct HTML source not found", true);
+            }
+        }
+
+        // Handle Messages Posted from Output Iframe
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'DEV_EDTR_ELEMENT_SELECTED') {
+                const { devId, tagInfo, hierarchy } = event.data;
+                
+                renderBreadcrumbs(hierarchy, devId);
+
+                // Ensure correct HTML Tab is active
+                if (currentMode === 'multi' && activeTab !== 'html') {
+                    switchTab('html');
+                } else if (currentMode === 'single' && activeTab !== 'single') {
+                    switchTab('single');
+                }
+
+                const statusMsg = document.getElementById('inspect-status-msg');
+
+                if (devId && globalSourceMap[devId]) {
+                    const range = globalSourceMap[devId];
+                    if (statusMsg) statusMsg.textContent = "Exact HTML Source mapped!";
+                    
+                    htmlCode.focus();
+                    htmlCode.setSelectionRange(range.start, range.end);
+
+                    // Scroll editor to highlighted code block
+                    const currentSourceCode = htmlCode.value;
+                    const linesBefore = currentSourceCode.substring(0, range.start).split('\n').length;
+                    const totalLines = currentSourceCode.split('\n').length;
+                    if (totalLines > 0) {
+                        const scrollRatio = Math.max(0, (linesBefore - 1) / totalLines);
+                        htmlCode.scrollTop = htmlCode.scrollHeight * scrollRatio;
+                    }
+                } else {
+                    if (statusMsg) statusMsg.textContent = "Runtime Generated Element — direct HTML source not found";
+                    showToast("Runtime Element — direct HTML source not found", true);
+                }
+            }
+        });
 
         function saveCodeLocal() {
             try {
@@ -773,7 +1323,7 @@ ${codeStore.js}
         }
 
         window.downloadCode = function() {
-            const compiledHtml = getCompiledHTML();
+            const compiledHtml = getCompiledHTML(false); // Export clean code without inspect script
             const blob = new Blob([compiledHtml], { type: 'text/html' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
