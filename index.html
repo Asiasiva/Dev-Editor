@@ -770,6 +770,8 @@
         let isInspectActive = false;
         let globalSourceMap = {};
 
+        let currentBlobUrl = null;
+
         let selectedElementState = {
             devId: null,
             tagName: '',
@@ -844,7 +846,6 @@
                 if (!mainSplit) return;
 
                 const rect = mainSplit.getBoundingClientRect();
-                // Account for AI panel if visible
                 const aiPanel = document.getElementById('ai-assistant-panel');
                 const aiWidth = (aiPanel && !aiPanel.classList.contains('hidden')) ? aiPanel.offsetWidth + 8 : 0;
                 const resizerWidth = 10;
@@ -852,7 +853,6 @@
                 let availableWidth = rect.width - aiWidth - resizerWidth;
                 let editorWidth = e.clientX - rect.left;
 
-                // Clamp
                 const minEditor = 220;
                 const minOutput = 280;
                 editorWidth = Math.max(minEditor, Math.min(editorWidth, availableWidth - minOutput));
@@ -867,7 +867,6 @@
                 panelResizer.classList.remove('dragging');
                 body.classList.remove('resizing-panels');
 
-                // Save current ratio
                 const mainSplit = document.querySelector('.main-split');
                 if (mainSplit && editorPanel) {
                     const aiPanel = document.getElementById('ai-assistant-panel');
@@ -911,7 +910,6 @@
         }
 
         function applySplitRatio(ratio) {
-            // ratio = editor share of available space (0-1)
             const editorPct = Math.round(ratio * 100);
             const outputPct = 100 - editorPct;
             editorPanel.style.flex = `1 1 ${editorPct}%`;
@@ -982,7 +980,6 @@
 
         // --- GEMINI API KEY MANAGEMENT ---
         
-        // Google API-லிருந்து புதிய மாடல்களைத் தானாகப் பெறும் சார்பு
         async function getAvailableGeminiModels(apiKey) {
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -1071,10 +1068,8 @@
             testBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Checking Models...`;
 
             try {
-                // 1. புதிய மாடல்களைத் தானாகப் பெறுதல்
                 const availableModels = await getAvailableGeminiModels(apiKey);
 
-                // 2. நீங்கள் விரும்பும் முன்னுரிமைப் பட்டியல்
                 const customModelsToTry = [
                     "gemini-3.5-flash",        
                     "gemini-3.1-flash-lite",   
@@ -1082,12 +1077,10 @@
                     "gemini-3-flash-preview"
                 ];
 
-                // 3. இரண்டையும் இணைத்தல் (Duplicates இல்லாமல்)
                 const modelsToTry = Array.from(new Set([...customModelsToTry, ...availableModels]));
 
                 let workingModel = null;
 
-                // 4. ஒவ்வொரு மாடலாகச் சோதித்தல்
                 for (const model of modelsToTry) {
                     try {
                         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -1106,7 +1099,7 @@
                 }
 
                 if (workingModel) {
-                    GEMINI_MODEL_NAME = workingModel; // வேலை செய்யும் மாடலை அமைத்தல்
+                    GEMINI_MODEL_NAME = workingModel;
                     showToast(`வெற்றி! ${workingModel} மாடல் இணைக்கப்பட்டது.`);
                     updateApiStatus(true);
                 } else {
@@ -1390,7 +1383,6 @@ CRITICAL RULES:
             updateOutput();
         };
 
-
         // --- RESPONSIVE EDITOR / PREVIEW DRAG RESIZER ---
         function initSplitResizer() {
             const resizer = document.getElementById('split-resizer');
@@ -1591,36 +1583,43 @@ CRITICAL RULES:
         };
 
         function hijackConsole(iframe) {
-            if (!iframe.contentWindow) return;
+            if (!iframe || !iframe.contentWindow) return;
             const consoleMethods = ['log', 'warn', 'error'];
-            consoleOutput.innerHTML = ''; 
 
             consoleMethods.forEach(method => {
-                iframe.contentWindow.console[method] = (...args) => {
-                    const message = args.map(arg => {
-                        if (typeof arg === 'object' && arg !== null) {
-                            try { return JSON.stringify(arg); } catch (e) { return String(arg); }
-                        }
-                        return String(arg);
-                    }).join(' ');
+                try {
+                    iframe.contentWindow.console[method] = (...args) => {
+                        const message = args.map(arg => {
+                            if (typeof arg === 'object' && arg !== null) {
+                                try { return JSON.stringify(arg); } catch (e) { return String(arg); }
+                            }
+                            return String(arg);
+                        }).join(' ');
 
-                    const line = document.createElement('div');
-                    line.className = `console-${method}`;
-                    line.textContent = `[${method.toUpperCase()}] ${message}`;
-                    consoleOutput.appendChild(line);
-                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
-                    console[method](...args);
-                };
+                        const line = document.createElement('div');
+                        line.className = `console-${method}`;
+                        line.textContent = `[${method.toUpperCase()}] ${message}`;
+                        consoleOutput.appendChild(line);
+                        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                        console[method](...args);
+                    };
+                } catch (err) {
+                    console.warn("Console hijacking error:", err);
+                }
             });
             
-            iframe.contentWindow.onerror = (message, source, lineno) => {
-                const line = document.createElement('div');
-                line.className = 'console-error';
-                line.textContent = `[RUNTIME ERROR] ${message} (Line: ${lineno})`;
-                consoleOutput.appendChild(line);
-                consoleOutput.scrollTop = consoleOutput.scrollHeight;
-                return true; 
-            };
+            try {
+                iframe.contentWindow.onerror = (message, source, lineno) => {
+                    const line = document.createElement('div');
+                    line.className = 'console-error';
+                    line.textContent = `[RUNTIME ERROR] ${message} (Line: ${lineno})`;
+                    consoleOutput.appendChild(line);
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                    return true; 
+                };
+            } catch (err) {
+                console.warn("Console onerror bind error:", err);
+            }
         }
 
         // --- Line Number Logic ---
@@ -2241,10 +2240,16 @@ CRITICAL RULES:
                 if (includeInspectScript) {
                     const { injectedHtml, sourceMap } = createHtmlSourceMapAndInjectedHtml(singleSource);
                     globalSourceMap = sourceMap;
-                    if (injectedHtml.includes('</body>')) {
-                        return injectedHtml.replace('</body>', `${inspectInjectionScript}\n</body>`);
+
+                    const lower = injectedHtml.toLowerCase();
+                    if (lower.includes('</body>')) {
+                        const idx = lower.lastIndexOf('</body>');
+                        return injectedHtml.slice(0, idx) + inspectInjectionScript + '\n' + injectedHtml.slice(idx);
+                    } else if (lower.includes('</html>')) {
+                        const idx = lower.lastIndexOf('</html>');
+                        return injectedHtml.slice(0, idx) + inspectInjectionScript + '\n' + injectedHtml.slice(idx);
                     } else {
-                        return injectedHtml + inspectInjectionScript;
+                        return injectedHtml + '\n' + inspectInjectionScript;
                     }
                 }
                 return singleSource;
@@ -2283,22 +2288,27 @@ ${codeStore.js}
 
             const finalOutput = getCompiledHTML(true);
             
-            outputFrame.contentWindow.document.open();
-            outputFrame.contentWindow.document.write(finalOutput);
-            outputFrame.contentWindow.document.close();
-
-            hijackConsole(outputFrame);
-
-            if (isInspectActive) {
-                setTimeout(() => {
-                    if (outputFrame.contentWindow) {
-                        outputFrame.contentWindow.postMessage({
-                            type: 'DEV_EDTR_INSPECT_TOGGLE',
-                            active: true
-                        }, '*');
-                    }
-                }, 100);
+            // Revoke old blob URL to prevent memory leaks
+            if (currentBlobUrl) {
+                URL.revokeObjectURL(currentBlobUrl);
+                currentBlobUrl = null;
             }
+
+            const blob = new Blob([finalOutput], { type: 'text/html;charset=utf-8' });
+            currentBlobUrl = URL.createObjectURL(blob);
+
+            // Re-bind hijacking and inspect initialization once iframe finishes loading
+            outputFrame.onload = () => {
+                hijackConsole(outputFrame);
+                if (isInspectActive && outputFrame.contentWindow) {
+                    outputFrame.contentWindow.postMessage({
+                        type: 'DEV_EDTR_INSPECT_TOGGLE',
+                        active: true
+                    }, '*');
+                }
+            };
+
+            outputFrame.src = currentBlobUrl;
         }
 
         // --- VISUAL ELEMENT PICKER TOGGLE ---
