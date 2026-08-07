@@ -12,6 +12,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Prettier Standalone and Parsers for Formatting -->
+    <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.8/parser-html.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.8/parser-postcss.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
+
     <style>
         /* Base styles (Light Theme Defaults) */
         :root {
@@ -158,7 +164,7 @@
 
         /* Console log types */
         .console-log { color: #ccc; }
-        .console-error { color: #f87171; font-weight: bold; } 
+        .console-error { color: #f87171; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2px; } 
         .console-warn { color: #fcd34d; } 
         
         /* Output frame wrapper for centering */
@@ -451,6 +457,12 @@
                     <i class="fa-solid fa-file-code mr-1"></i> Single HTML
                 </button>
             </div>
+
+            <!-- Auto Format Code Button -->
+            <button onclick="formatCurrentCode();" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center gap-1.5" title="Auto Format Code">
+                <i class="fa-solid fa-align-left"></i>
+                <span>Format</span>
+            </button>
 
             <!-- AI Assistant Toggle Button -->
             <button onclick="toggleAiPanel();" id="ai-toggle-btn" class="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center gap-1.5" title="Toggle AI Assistant">
@@ -794,7 +806,7 @@
             </div>
             <!-- Console Output Panel (DEFAULT COLLAPSED/HIDDEN) -->
             <div id="console-output-wrapper" class="flex-none h-[150px] console-hidden">
-                <pre id="console-output" class="h-full"></pre>
+                <pre id="console-output" class="h-full p-2 overflow-y-auto font-mono text-xs"></pre>
             </div>
         </div>
 
@@ -861,6 +873,45 @@
         const body = document.body;
         const themeToggleBtn = document.getElementById('theme-toggle-btn');
         const dbStatus = document.getElementById('db-status');
+
+        // --- FEATURE 1: AUTO FORMAT CODE (PRETTIER INTEGRATION) ---
+        window.formatCurrentCode = function() {
+            try {
+                const unformatted = htmlCode.value;
+                if (!unformatted.trim()) return;
+
+                let formatted = unformatted;
+                if (activeTab === 'html' || activeTab === 'single') {
+                    formatted = prettier.format(unformatted, {
+                        parser: "html",
+                        plugins: prettierPlugins,
+                        tabWidth: 4,
+                        useTabs: false
+                    });
+                } else if (activeTab === 'css') {
+                    formatted = prettier.format(unformatted, {
+                        parser: "css",
+                        plugins: prettierPlugins,
+                        tabWidth: 4
+                    });
+                } else if (activeTab === 'js') {
+                    formatted = prettier.format(unformatted, {
+                        parser: "babel",
+                        plugins: prettierPlugins,
+                        tabWidth: 4
+                    });
+                }
+
+                htmlCode.value = formatted;
+                codeStore[activeTab] = formatted;
+                updateOutput();
+                saveCodeLocal();
+                showToast("கோடு வெற்றிகரமாக Format செய்யப்பட்டது!");
+            } catch (err) {
+                console.warn("Formatting failed:", err);
+                showToast("Format செய்வதில் பிழை! Syntax-ஐ சரிபார்க்கவும்.", true);
+            }
+        };
 
         // --- PANEL RESIZER (Editor ↔ Preview drag to resize) ---
         let isResizingPanels = false;
@@ -1159,7 +1210,6 @@
 
         // --- AI LAYER CONTEXT SWITCHER & DISPLAY ENGINE ---
         
-        // Return current active snippet text for the selected layer
         function getLayerCodeSnippet(layerType) {
             if (!selectedSourceState) return "No element selected";
 
@@ -1192,7 +1242,6 @@
             return "";
         }
 
-        // Update the AI Assistant Panel's Layer display box
         function updateAiLayerDisplay() {
             const titleEl = document.getElementById('ai-layer-code-title');
             const codeEl = document.getElementById('ai-layer-code-display');
@@ -1210,7 +1259,6 @@
             const snippet = getLayerCodeSnippet(activeAiLayer);
             codeEl.textContent = snippet;
 
-            // Update text color depending on active layer
             if (activeAiLayer === 'html') codeEl.className = "bg-gray-900 p-2 rounded text-[10px] font-mono text-orange-300 max-h-32 overflow-auto whitespace-pre-wrap border border-gray-800";
             else if (activeAiLayer === 'css') codeEl.className = "bg-gray-900 p-2 rounded text-[10px] font-mono text-blue-300 max-h-32 overflow-auto whitespace-pre-wrap border border-gray-800";
             else if (activeAiLayer === 'js') codeEl.className = "bg-gray-900 p-2 rounded text-[10px] font-mono text-yellow-300 max-h-32 overflow-auto whitespace-pre-wrap border border-gray-800";
@@ -1321,7 +1369,6 @@ Return ONLY updated ${activeAiLayer.toUpperCase()}. No conversation, no explanat
                 document.getElementById('ai-preview-original').textContent = currentLayerCode;
                 document.getElementById('ai-preview-modified').textContent = cleanGeneratedCode;
                 
-                // Show AI Change Preview Container clearly
                 const previewContainer = document.getElementById('ai-preview-container');
                 if (previewContainer) {
                     previewContainer.classList.remove('hidden');
@@ -1422,7 +1469,6 @@ Return ONLY updated ${activeAiLayer.toUpperCase()}. No conversation, no explanat
                 }
             }
 
-            // Sync currently visible tab code
             htmlCode.value = codeStore[activeTab] || '';
 
             updateOutput();
@@ -1437,6 +1483,54 @@ Return ONLY updated ${activeAiLayer.toUpperCase()}. No conversation, no explanat
             const previewContainer = document.getElementById('ai-preview-container');
             if (previewContainer) {
                 previewContainer.classList.add('hidden');
+            }
+        };
+
+        // --- FEATURE 4: CONSOLE AI ERROR AUTO-FIXER ENGINE ---
+        window.fixConsoleErrorWithAi = async function(errorMessage) {
+            let apiKey = getSavedApiKey();
+            if (!apiKey) {
+                showToast("Gemini API Key இல்லை! AI Assistant panel-ல் API Key உள்ளிடவும்.", true);
+                document.getElementById('ai-assistant-panel').classList.remove('hidden');
+                return;
+            }
+
+            const activeSource = htmlCode.value;
+            const promptText = `Fix the JavaScript runtime error in this code.
+
+RUNTIME ERROR:
+${errorMessage}
+
+CURRENT CODE (${activeTab.toUpperCase()}):
+${activeSource}
+
+Return ONLY the complete fixed code for this layer. No conversational text, no explanations, no markdown fences.`;
+
+            showToast("AI மூலம் பிழை சரிசெய்யப்படுகிறது...");
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_NAME}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const cleanCode = sanitizeAiResponse(rawText);
+
+                if (cleanCode) {
+                    htmlCode.value = cleanCode;
+                    codeStore[activeTab] = cleanCode;
+                    updateOutput();
+                    saveCodeLocal();
+                    showToast("Console பிழை AI மூலம் சரிசெய்யப்பட்டு கோடு அப்டேட் செய்யப்பட்டது!");
+                }
+            } catch (err) {
+                console.error("Console Fix Failed:", err);
+                showToast(`AI Fix பிழை: ${err.message}`, true);
             }
         };
 
@@ -1674,7 +1768,7 @@ Return ONLY updated ${activeAiLayer.toUpperCase()}. No conversation, no explanat
             tooltip.classList.toggle('hidden');
         };
 
-        // --- CONSOLE LOGIC ---
+        // --- CONSOLE LOGIC & AI ERROR FIX BUTTON INTEGRATION ---
         window.clearConsole = function() {
             consoleOutput.innerHTML = '';
             showToast("Console Clear ஆனது.");
@@ -1702,7 +1796,22 @@ Return ONLY updated ${activeAiLayer.toUpperCase()}. No conversation, no explanat
 
                         const line = document.createElement('div');
                         line.className = `console-${method}`;
-                        line.textContent = `[${method.toUpperCase()}] ${message}`;
+
+                        if (method === 'error') {
+                            const msgSpan = document.createElement('span');
+                            msgSpan.textContent = `[ERROR] ${message}`;
+                            
+                            const aiFixBtn = document.createElement('button');
+                            aiFixBtn.className = "px-1.5 py-0.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded text-[10px] font-bold transition shadow shrink-0";
+                            aiFixBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Fix with AI`;
+                            aiFixBtn.onclick = () => fixConsoleErrorWithAi(message);
+
+                            line.appendChild(msgSpan);
+                            line.appendChild(aiFixBtn);
+                        } else {
+                            line.textContent = `[${method.toUpperCase()}] ${message}`;
+                        }
+
                         consoleOutput.appendChild(line);
                         consoleOutput.scrollTop = consoleOutput.scrollHeight;
                         console[method](...args);
@@ -1714,9 +1823,21 @@ Return ONLY updated ${activeAiLayer.toUpperCase()}. No conversation, no explanat
             
             try {
                 iframe.contentWindow.onerror = (message, source, lineno) => {
+                    const fullErr = `${message} (Line: ${lineno})`;
                     const line = document.createElement('div');
                     line.className = 'console-error';
-                    line.textContent = `[RUNTIME ERROR] ${message} (Line: ${lineno})`;
+
+                    const msgSpan = document.createElement('span');
+                    msgSpan.textContent = `[RUNTIME ERROR] ${fullErr}`;
+
+                    const aiFixBtn = document.createElement('button');
+                    aiFixBtn.className = "px-1.5 py-0.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded text-[10px] font-bold transition shadow shrink-0";
+                    aiFixBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Fix with AI`;
+                    aiFixBtn.onclick = () => fixConsoleErrorWithAi(fullErr);
+
+                    line.appendChild(msgSpan);
+                    line.appendChild(aiFixBtn);
+
                     consoleOutput.appendChild(line);
                     consoleOutput.scrollTop = consoleOutput.scrollHeight;
                     return true; 
