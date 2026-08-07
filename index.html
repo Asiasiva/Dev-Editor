@@ -195,6 +195,30 @@
             background-color: #1e1e1e;
         }
 
+        /* AI Layer Switcher Tab Buttons */
+        .ai-layer-tab {
+            flex: 1;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-align: center;
+            border-radius: 0.375rem;
+            background-color: #1f2937;
+            color: #9ca3af;
+            transition: all 0.2s ease;
+            border: 1px solid #374151;
+        }
+        .ai-layer-tab:hover {
+            color: #ffffff;
+            background-color: #374151;
+        }
+        .ai-layer-tab.active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+        }
+
         /* Output frame itself */
         #output-frame {
             border: none;
@@ -581,18 +605,37 @@
                 </button>
             </div>
 
-            <!-- Selected Element Info Box -->
-            <div class="bg-gray-800/80 p-2.5 rounded-lg border border-gray-700 text-xs space-y-1.5">
+            <!-- Selected Element Info Box & Layer Context Tabs -->
+            <div class="bg-gray-800/80 p-2.5 rounded-lg border border-gray-700 text-xs space-y-2">
                 <div class="text-gray-400 font-semibold uppercase text-[10px] tracking-wider">Selected Element:</div>
                 <div id="ai-selected-element-display" class="font-mono text-amber-400 font-bold truncate bg-gray-900 px-2 py-1 rounded border border-gray-800">
                     None (Inspect & Select)
+                </div>
+
+                <!-- Layer Context Switcher [ HTML ] [ CSS ] [ JS ] -->
+                <div class="flex items-center gap-1 pt-1">
+                    <button id="ai-layer-tab-html" onclick="switchAiLayer('html')" class="ai-layer-tab active">
+                        HTML
+                    </button>
+                    <button id="ai-layer-tab-css" onclick="switchAiLayer('css')" class="ai-layer-tab">
+                        CSS
+                    </button>
+                    <button id="ai-layer-tab-js" onclick="switchAiLayer('js')" class="ai-layer-tab">
+                        JS
+                    </button>
+                </div>
+
+                <!-- Live Active Layer Preview Box -->
+                <div class="space-y-1 pt-1">
+                    <span id="ai-layer-code-title" class="text-[10px] text-gray-400 block font-semibold uppercase tracking-wider">CURRENT HTML</span>
+                    <pre id="ai-layer-code-display" class="bg-gray-900 p-2 rounded text-[10px] font-mono text-blue-300 max-h-32 overflow-auto whitespace-pre-wrap border border-gray-800">No element selected</pre>
                 </div>
             </div>
 
             <!-- Instruction Input Box -->
             <div class="flex-1 flex flex-col gap-1.5 min-h-[100px]">
                 <label for="ai-instruction-input" class="text-xs font-semibold text-gray-300">What do you want to change?</label>
-                <textarea id="ai-instruction-input" class="w-full flex-1 bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 resize-none" placeholder="எ.கா: Make this button green, change text to bold..."></textarea>
+                <textarea id="ai-instruction-input" class="w-full flex-1 bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 resize-none" placeholder="எ.கா: button colour blue, make font size 18px..."></textarea>
             </div>
 
             <!-- Fix with AI Button -->
@@ -616,10 +659,10 @@
                     <pre id="ai-preview-modified" class="bg-gray-900 p-1.5 rounded text-[10px] font-mono text-green-300 max-h-24 overflow-auto whitespace-pre-wrap border border-green-900/40"></pre>
                 </div>
                 <div class="flex gap-2 pt-1">
-                    <button onclick="applyAiChange()" class="flex-1 py-1 bg-green-600 hover:bg-green-700 text-white font-bold rounded text-xs transition">
-                        <i class="fa-solid fa-check mr-1"></i> Apply Change
+                    <button onclick="applyAiChange()" class="flex-1 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded text-xs transition flex items-center justify-center gap-1 shadow">
+                        <i class="fa-solid fa-check"></i> Apply Change
                     </button>
-                    <button onclick="cancelAiChange()" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold rounded text-xs transition">
+                    <button onclick="cancelAiChange()" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold rounded text-xs transition">
                         <i class="fa-solid fa-xmark"></i> Cancel
                     </button>
                 </div>
@@ -771,6 +814,7 @@
         let globalSourceMap = {};
 
         let currentBlobUrl = null;
+        let activeAiLayer = 'html'; // Current Selected Layer in AI Panel: 'html' | 'css' | 'js'
 
         let selectedElementState = {
             devId: null,
@@ -788,9 +832,9 @@
 
         const codeStore = {
             html: `<div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg text-center">\n    <h1 class="text-3xl font-bold text-blue-600">Dev Edtr Pro</h1>\n    <p class="mt-2 text-gray-600 text-sm">HTML, CSS மற்றும் JavaScript தனித்தனியாக இயங்கும் வசதி!</p>\n    <button id="buyBtn" class="buy-btn mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg transition">\n        <span>Buy Now</span>\n    </button>\n</div>`,
-            css: `body {\n    background-color: #f3f4f6;\n    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n    padding: 2rem;\n}\n\n.buy-btn {\n    background: blue;\n    color: white;\n    font-weight: 600;\n    cursor: pointer;\n}\n\n.buy-btn:hover {\n    transform: translateY(-1px);\n}`,
-            js: `const buyBtn = document.getElementById('buyBtn');\nif (buyBtn) {\n    buyBtn.addEventListener('click', () => {\n        alert("Buying");\n    });\n}`,
-            single: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"><\/script>\n    <title>Dev Edtr Single File</title>\n    <style>\n        body { background-color: #eff6ff; padding: 2rem; }\n        .buy-btn { background: blue; color: white; border-radius: 0.5rem; }\n    </style>\n</head>\n<body>\n    <div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">\n        <h1 class="text-2xl font-bold text-blue-600">Single HTML Mode</h1>\n        <button id="buyBtn" class="buy-btn mt-4 px-4 py-2">\n            <span>Buy Now</span>\n        </button>\n    </div>\n    <script>\n        const buyBtn = document.getElementById('buyBtn');\n        if (buyBtn) {\n            buyBtn.addEventListener('click', () => {\n                alert("Buying");\n            });\n        }\n    <\/script>\n</body>\n</html>`
+            css: `body {\n    background-color: #f3f4f6;\n    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n    padding: 2rem;\n}\n\n.buy-btn {\n    background: green;\n    color: white;\n    border-radius: .5rem;\n}\n\n.buy-btn:hover {\n    transform: translateY(-1px);\n}`,
+            js: `const buyBtn = document.getElementById("buyBtn");\nif (buyBtn) {\n    buyBtn.addEventListener("click", () => {\n        alert("Buying");\n    });\n}`,
+            single: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"><\/script>\n    <title>Dev Edtr Single File</title>\n    <style>\n        body { background-color: #eff6ff; padding: 2rem; }\n        .buy-btn { background: green; color: white; border-radius: 0.5rem; }\n    </style>\n</head>\n<body>\n    <div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">\n        <h1 class="text-2xl font-bold text-blue-600">Single HTML Mode</h1>\n        <button id="buyBtn" class="buy-btn mt-4 px-4 py-2">\n            <span>Buy Now</span>\n        </button>\n    </div>\n    <script>\n        const buyBtn = document.getElementById('buyBtn');\n        if (buyBtn) {\n            buyBtn.addEventListener('click', () => {\n                alert("Buying");\n            });\n        }\n    <\/script>\n</body>\n</html>`
         };
 
         // இயல்புநிலை மாடல்
@@ -824,7 +868,6 @@
         function initPanelResizer() {
             if (!panelResizer || !editorPanel || !outputPanel) return;
 
-            // Restore saved ratio if any
             const savedRatio = localStorage.getItem('devEdtr_splitRatio');
             if (savedRatio) {
                 const ratio = parseFloat(savedRatio);
@@ -1114,7 +1157,71 @@
             }
         };
 
-        // --- AI INSTRUCTION & RANGE REPLACEMENT ENGINE ---
+        // --- AI LAYER CONTEXT SWITCHER & DISPLAY ENGINE ---
+        
+        // Return current active snippet text for the selected layer
+        function getLayerCodeSnippet(layerType) {
+            if (!selectedSourceState) return "No element selected";
+
+            if (layerType === 'html') {
+                return selectedSourceState.originalCode || "No HTML Snippet found";
+            } else if (layerType === 'css') {
+                if (selectedElementState.cssMatches && selectedElementState.cssMatches.length > 0) {
+                    const cssSrc = currentMode === 'multi' ? codeStore.css : (codeStore.single || htmlCode.value);
+                    let cssText = "";
+                    selectedElementState.cssMatches.forEach((m) => {
+                        cssText += cssSrc.substring(m.start, m.end) + "\n\n";
+                    });
+                    return cssText.trim();
+                }
+                return "/* No matching CSS rules found for this element */";
+            } else if (layerType === 'js') {
+                if (selectedElementState.jsMatches && selectedElementState.jsMatches.length > 0) {
+                    const jsSrc = currentMode === 'multi' ? codeStore.js : (codeStore.single || htmlCode.value);
+                    let jsText = "";
+                    selectedElementState.jsMatches.forEach((m) => {
+                        const lines = jsSrc.split('\n');
+                        const lineIdx = lines.findIndex(l => l.includes(m.label.split(' ')[0]));
+                        const blockRange = lineIdx !== -1 ? findJsBlockRange(jsSrc, lineIdx) : { start: m.start, end: m.end };
+                        jsText += jsSrc.substring(blockRange.start, blockRange.end) + "\n\n";
+                    });
+                    return jsText.trim();
+                }
+                return "// No matching JS code found for this element";
+            }
+            return "";
+        }
+
+        // Update the AI Assistant Panel's Layer display box
+        function updateAiLayerDisplay() {
+            const titleEl = document.getElementById('ai-layer-code-title');
+            const codeEl = document.getElementById('ai-layer-code-display');
+            if (!titleEl || !codeEl) return;
+
+            ['html', 'css', 'js'].forEach(l => {
+                const btn = document.getElementById(`ai-layer-tab-${l}`);
+                if (btn) {
+                    if (l === activeAiLayer) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+
+            titleEl.textContent = `CURRENT ${activeAiLayer.toUpperCase()}`;
+            const snippet = getLayerCodeSnippet(activeAiLayer);
+            codeEl.textContent = snippet;
+
+            // Update text color depending on active layer
+            if (activeAiLayer === 'html') codeEl.className = "bg-gray-900 p-2 rounded text-[10px] font-mono text-orange-300 max-h-32 overflow-auto whitespace-pre-wrap border border-gray-800";
+            else if (activeAiLayer === 'css') codeEl.className = "bg-gray-900 p-2 rounded text-[10px] font-mono text-blue-300 max-h-32 overflow-auto whitespace-pre-wrap border border-gray-800";
+            else if (activeAiLayer === 'js') codeEl.className = "bg-gray-900 p-2 rounded text-[10px] font-mono text-yellow-300 max-h-32 overflow-auto whitespace-pre-wrap border border-gray-800";
+        }
+
+        window.switchAiLayer = function(layer) {
+            activeAiLayer = layer;
+            updateAiLayerDisplay();
+        };
+
+        // --- AI INSTRUCTION & DIRECT LAYER REPLACEMENT ENGINE ---
         function sanitizeAiResponse(responseText) {
             if (!responseText) return '';
             let clean = responseText.trim();
@@ -1142,7 +1249,7 @@
                 return;
             }
 
-            if (!selectedSourceState || !selectedSourceState.devId || !selectedSourceState.range) {
+            if (!selectedSourceState || !selectedSourceState.devId) {
                 showToast("முதலில் Preview-ல் மாற்ற வேண்டிய element-ஐ Inspect மூலம் தேர்வு செய்யவும்.", true);
                 return;
             }
@@ -1153,71 +1260,25 @@
                 return;
             }
 
-            const currentSourceCode = htmlCode.value;
-            const snapshot = selectedSourceState;
-            
-            if (snapshot.tab !== activeTab || snapshot.mode !== currentMode) {
-                showToast("எடிட்டர் டேப் மாற்றப்பட்டது. மீண்டும் Element-ஐ Inspect செய்யவும்.", true);
-                return;
-            }
+            const elementSelectorTag = selectedElementState.tagName ? 
+                (selectedElementState.tagName + (selectedElementState.id ? '#' + selectedElementState.id : '') + (selectedElementState.classes.length ? '.' + selectedElementState.classes.join('.') : '')) 
+                : "selected element";
 
-            const actualSelectedCode = currentSourceCode.substring(snapshot.range.start, snapshot.range.end);
-            if (actualSelectedCode !== snapshot.originalCode) {
-                showToast("Source changed while selecting. Please inspect the element again.", true);
-                return;
-            }
+            const currentLayerCode = getLayerCodeSnippet(activeAiLayer);
 
-            let cssContextText = "";
-            let cssRangeMap = [];
-            if (selectedElementState.cssMatches && selectedElementState.cssMatches.length > 0) {
-                const cssSrc = currentMode === 'multi' ? codeStore.css : codeStore.single;
-                selectedElementState.cssMatches.forEach((m, idx) => {
-                    const snippet = cssSrc.substring(m.start, m.end);
-                    cssContextText += `\n--- CSS BLOCK ${idx + 1} ---\n${snippet}\n`;
-                    cssRangeMap.push(m);
-                });
-            }
+            const promptText = `Selected Type
+${activeAiLayer.toUpperCase()}
 
-            let jsContextText = "";
-            let jsRangeMap = [];
-            if (selectedElementState.jsMatches && selectedElementState.jsMatches.length > 0) {
-                const jsSrc = currentMode === 'multi' ? codeStore.js : codeStore.single;
-                selectedElementState.jsMatches.forEach((m, idx) => {
-                    const lines = jsSrc.split('\n');
-                    const lineIdx = lines.findIndex(l => l.includes(m.label.split(' ')[0]));
-                    const blockRange = lineIdx !== -1 ? findJsBlockRange(jsSrc, lineIdx) : { start: m.start, end: m.end };
-                    const snippet = jsSrc.substring(blockRange.start, blockRange.end);
-                    jsContextText += `\n--- JS BLOCK ${idx + 1} ---\n${snippet}\n`;
-                    jsRangeMap.push(blockRange);
-                });
-            }
+Selected Element
+${elementSelectorTag}
 
-            const promptText = `You are a web editor AI assistant. Modify ONLY the layers requested by the user.
+Current ${activeAiLayer.toUpperCase()}
+${currentLayerCode}
 
-USER INSTRUCTION: ${instruction}
+User Request
+${instruction}
 
---- SELECTED HTML ELEMENT ---
-${snapshot.originalCode}
-
---- RELEVANT CSS BLOCKS ---
-${cssContextText || "None"}
-
---- RELEVANT JS BLOCKS ---
-${jsContextText || "None"}
-
-CRITICAL RULES:
-1. Content/Structure changes -> Modify HTML.
-2. Styling/Appearance changes -> Modify CSS (Do NOT use inline style="" if CSS block exists).
-3. Behaviour/Interaction changes -> Modify JS (Do NOT use inline onclick="" if JS handler exists).
-4. Do NOT rewrite unrelated code. Preserve IDs, classes, and structure.
-5. Output MUST be valid JSON strictly matching this schema:
-{
-  "html": "updated html string or null",
-  "css": "updated css string or null",
-  "js": "updated js string or null"
-}
-6. If a layer requires no change, set its value to null.
-7. Return ONLY raw valid JSON. No conversational text.`;
+Return ONLY updated ${activeAiLayer.toUpperCase()}. No conversation, no explanations, no markdown fences if possible.`;
 
             isAiProcessing = true;
             const fixBtn = document.getElementById('ai-fix-btn');
@@ -1226,7 +1287,7 @@ CRITICAL RULES:
 
             fixBtn.disabled = true;
             fixIcon.className = "fa-solid fa-circle-notch animate-spin";
-            fixBtnText.textContent = "AI is modifying selected code...";
+            fixBtnText.textContent = `AI is modifying ${activeAiLayer.toUpperCase()}...`;
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_NAME}:generateContent?key=${apiKey}`, {
@@ -1250,30 +1311,24 @@ CRITICAL RULES:
                     throw new Error("Gemini-யிடமிருந்து வெற்று குறியீடு வந்தது.");
                 }
 
-                let parsedAiResult = null;
-                try {
-                    parsedAiResult = JSON.parse(cleanGeneratedCode);
-                } catch (jsonErr) {
-                    throw new Error("AI வழங்கிய பதில் முறையான JSON வடிவில் இல்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.");
-                }
-
                 pendingAiReplacement = {
-                    snapshot: { ...snapshot },
-                    parsedResult: parsedAiResult,
-                    cssRangeMap: cssRangeMap,
-                    jsRangeMap: jsRangeMap
+                    layer: activeAiLayer,
+                    snapshot: { ...selectedSourceState },
+                    elementState: { ...selectedElementState },
+                    generatedCode: cleanGeneratedCode
                 };
 
-                let previewSummary = "";
-                if (parsedAiResult.html) previewSummary += `[HTML]:\n${parsedAiResult.html}\n\n`;
-                if (parsedAiResult.css) previewSummary += `[CSS]:\n${parsedAiResult.css}\n\n`;
-                if (parsedAiResult.js) previewSummary += `[JS]:\n${parsedAiResult.js}`;
+                document.getElementById('ai-preview-original').textContent = currentLayerCode;
+                document.getElementById('ai-preview-modified').textContent = cleanGeneratedCode;
+                
+                // Show AI Change Preview Container clearly
+                const previewContainer = document.getElementById('ai-preview-container');
+                if (previewContainer) {
+                    previewContainer.classList.remove('hidden');
+                    previewContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
 
-                document.getElementById('ai-preview-original').textContent = snapshot.originalCode;
-                document.getElementById('ai-preview-modified').textContent = previewSummary.trim() || "No changes requested.";
-                document.getElementById('ai-preview-container').classList.remove('hidden');
-
-                showToast("AI மாற்றம் தயாராக உள்ளது! Review செய்து Apply Change அழுத்தவும்.");
+                showToast(`${activeAiLayer.toUpperCase()} மாற்றம் தயாராக உள்ளது! Review செய்து Apply Change அழுத்தவும்.`);
 
             } catch (err) {
                 console.error("AI Request Failed:", err);
@@ -1289,51 +1344,100 @@ CRITICAL RULES:
         window.applyAiChange = function() {
             if (!pendingAiReplacement) return;
 
-            const { snapshot, parsedResult, cssRangeMap, jsRangeMap } = pendingAiReplacement;
+            const { layer, snapshot, elementState, generatedCode } = pendingAiReplacement;
 
-            if (parsedResult.html) {
-                const currentHtml = codeStore.html;
-                const before = currentHtml.slice(0, snapshot.range.start);
-                const after = currentHtml.slice(snapshot.range.end);
-                codeStore.html = before + parsedResult.html + after;
-            }
-
-            if (parsedResult.css) {
-                if (cssRangeMap && cssRangeMap.length > 0) {
-                    const targetRange = cssRangeMap[0];
-                    const currentCss = codeStore.css;
-                    const before = currentCss.slice(0, targetRange.start);
-                    const after = currentCss.slice(targetRange.end);
-                    codeStore.css = before + parsedResult.css + after;
+            if (layer === 'html') {
+                if (currentMode === 'multi') {
+                    const currentHtml = codeStore.html;
+                    const before = currentHtml.slice(0, snapshot.range.start);
+                    const after = currentHtml.slice(snapshot.range.end);
+                    codeStore.html = before + generatedCode + after;
                 } else {
-                    codeStore.css += `\n\n${parsedResult.css}`;
+                    const currentSingle = codeStore.single || htmlCode.value;
+                    const before = currentSingle.slice(0, snapshot.range.start);
+                    const after = currentSingle.slice(snapshot.range.end);
+                    codeStore.single = before + generatedCode + after;
+                }
+            } else if (layer === 'css') {
+                if (currentMode === 'multi') {
+                    if (elementState.cssMatches && elementState.cssMatches.length > 0) {
+                        const targetRange = elementState.cssMatches[0];
+                        const currentCss = codeStore.css;
+                        const before = currentCss.slice(0, targetRange.start);
+                        const after = currentCss.slice(targetRange.end);
+                        codeStore.css = before + generatedCode + after;
+                    } else {
+                        codeStore.css += `\n\n${generatedCode}`;
+                    }
+                } else {
+                    const currentSingle = codeStore.single || htmlCode.value;
+                    if (elementState.cssMatches && elementState.cssMatches.length > 0) {
+                        const targetRange = elementState.cssMatches[0];
+                        const before = currentSingle.slice(0, targetRange.start);
+                        const after = currentSingle.slice(targetRange.end);
+                        codeStore.single = before + generatedCode + after;
+                    } else {
+                        if (currentSingle.includes('</style>')) {
+                            codeStore.single = currentSingle.replace('</style>', `${generatedCode}\n</style>`);
+                        } else if (currentSingle.includes('</head>')) {
+                            codeStore.single = currentSingle.replace('</head>', `<style>\n${generatedCode}\n</style>\n</head>`);
+                        } else {
+                            codeStore.single += `\n<style>\n${generatedCode}\n</style>`;
+                        }
+                    }
+                }
+            } else if (layer === 'js') {
+                if (currentMode === 'multi') {
+                    if (elementState.jsMatches && elementState.jsMatches.length > 0) {
+                        const targetRange = elementState.jsMatches[0];
+                        const jsSrc = codeStore.js;
+                        const lines = jsSrc.split('\n');
+                        const lineIdx = lines.findIndex(l => l.includes(targetRange.label.split(' ')[0]));
+                        const blockRange = lineIdx !== -1 ? findJsBlockRange(jsSrc, lineIdx) : { start: targetRange.start, end: targetRange.end };
+                        
+                        const before = jsSrc.slice(0, blockRange.start);
+                        const after = jsSrc.slice(blockRange.end);
+                        codeStore.js = before + generatedCode + after;
+                    } else {
+                        codeStore.js += `\n\n${generatedCode}`;
+                    }
+                } else {
+                    const currentSingle = codeStore.single || htmlCode.value;
+                    if (elementState.jsMatches && elementState.jsMatches.length > 0) {
+                        const targetRange = elementState.jsMatches[0];
+                        const lines = currentSingle.split('\n');
+                        const lineIdx = lines.findIndex(l => l.includes(targetRange.label.split(' ')[0]));
+                        const blockRange = lineIdx !== -1 ? findJsBlockRange(currentSingle, lineIdx) : { start: targetRange.start, end: targetRange.end };
+
+                        const before = currentSingle.slice(0, blockRange.start);
+                        const after = currentSingle.slice(blockRange.end);
+                        codeStore.single = before + generatedCode + after;
+                    } else {
+                        if (currentSingle.includes('</body>')) {
+                            codeStore.single = currentSingle.replace('</body>', `<script>\n${generatedCode}\n<\/script>\n</body>`);
+                        } else {
+                            codeStore.single += `\n<script>\n${generatedCode}\n<\/script>`;
+                        }
+                    }
                 }
             }
 
-            if (parsedResult.js) {
-                if (jsRangeMap && jsRangeMap.length > 0) {
-                    const targetRange = jsRangeMap[0];
-                    const currentJs = codeStore.js;
-                    const before = currentJs.slice(0, targetRange.start);
-                    const after = currentJs.slice(targetRange.end);
-                    codeStore.js = before + parsedResult.js + after;
-                } else {
-                    codeStore.js += `\n\n${parsedResult.js}`;
-                }
-            }
-
+            // Sync currently visible tab code
             htmlCode.value = codeStore[activeTab] || '';
 
             updateOutput();
             saveCodeLocal();
 
             cancelAiChange();
-            showToast("HTML, CSS & JS மாற்றங்கள் வெற்றிகரமாக Apply செய்யப்பட்டன!");
+            showToast(`${layer.toUpperCase()} மாற்றம் வெற்றிகரமாக அப்ளை செய்யப்பட்டது!`);
         };
 
         window.cancelAiChange = function() {
             pendingAiReplacement = null;
-            document.getElementById('ai-preview-container').classList.add('hidden');
+            const previewContainer = document.getElementById('ai-preview-container');
+            if (previewContainer) {
+                previewContainer.classList.add('hidden');
+            }
         };
 
         // --- MODE AND TAB SWITCHING ---
@@ -2288,7 +2392,6 @@ ${codeStore.js}
 
             const finalOutput = getCompiledHTML(true);
             
-            // Revoke old blob URL to prevent memory leaks
             if (currentBlobUrl) {
                 URL.revokeObjectURL(currentBlobUrl);
                 currentBlobUrl = null;
@@ -2297,7 +2400,6 @@ ${codeStore.js}
             const blob = new Blob([finalOutput], { type: 'text/html;charset=utf-8' });
             currentBlobUrl = URL.createObjectURL(blob);
 
-            // Re-bind hijacking and inspect initialization once iframe finishes loading
             outputFrame.onload = () => {
                 hijackConsole(outputFrame);
                 if (isInspectActive && outputFrame.contentWindow) {
@@ -2643,6 +2745,7 @@ ${codeStore.js}
 
                 renderBreadcrumbs(hierarchy, devId);
                 updateRelatedCodePanel();
+                updateAiLayerDisplay();
 
                 if (currentMode === 'multi' && activeTab !== 'html') {
                     switchTab('html');
