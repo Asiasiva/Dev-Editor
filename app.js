@@ -202,34 +202,62 @@
             return true;
         }
 
+        function getEditorTabForExtension(filename) {
+            const ext = getFileExtension(filename);
+            if (ext === 'html') return 'html';
+            if (ext === 'css') return 'css';
+            if (ext === 'js' || ext === 'mjs') return 'js';
+            return 'file';
+        }
+
         function openProjectFile(filename) {
             if (!projectFiles[filename]) return;
+
+            // Save the file currently visible in the editor before switching.
             if (htmlCode?.dataset?.projectFile && !CORE_PROJECT_FILES.includes(htmlCode.dataset.projectFile)) {
                 syncActiveProjectFileFromEditor();
+            } else if (htmlCode && CORE_PROJECT_FILES.includes(activeProjectFile)) {
+                codeStore[activeTab] = htmlCode.value;
             }
+
+            const contentRecord = normalizeProjectFileValue(projectFiles[filename]);
+            const ext = getFileExtension(filename);
+
+            activeProjectFile = filename;
+
             if (CORE_PROJECT_FILES.includes(filename)) {
-                const coreTab = filename === 'index.html' ? 'html' : filename === 'style.css' ? 'css' : 'js';
-                activeProjectFile = filename;
-                if (currentMode !== 'multi') window.switchMode('multi');
+                const coreTab = filename === 'index.html' ? 'html'
+                    : filename === 'style.css' ? 'css'
+                    : 'js';
+
+                activeTab = coreTab;
                 delete htmlCode.dataset.projectFile;
+                htmlCode.value = codeStore[coreTab] || '';
                 window.switchTab(coreTab);
             } else {
-                codeStore[activeTab] = htmlCode.value;
-                activeProjectFile = filename;
-                htmlCode.value = projectFileContent(filename);
+                // IMPORTANT: imported files are loaded directly into the editor.
+                // Do not route them through the HTML/CSS/JS mode switch.
+                const inferredTab = getEditorTabForExtension(filename);
+                if (inferredTab !== 'file') activeTab = inferredTab;
+
+                htmlCode.value = contentRecord.encoding === 'base64'
+                    ? contentRecord.content
+                    : contentRecord.content;
+
                 htmlCode.dataset.projectFile = filename;
                 updateLineNumbers();
-                if (getFileExtension(filename) === 'env') {
-                    showToast('Warning: .env is not secure secret storage in browser projects.');
-                }
                 charCount.textContent = `${htmlCode.value.length} chars`;
-                renderProjectFiles();
-                if (getFileExtension(filename) === 'json' && !validateJsonFile(filename, htmlCode.value)) {
+
+                if (ext === 'env') {
+                    showToast('.env files are editable, but browser storage is not secure secret storage.');
+                } else if (ext === 'json' && !validateJsonFile(filename, htmlCode.value)) {
                     showToast('JSON syntax பிழை உள்ளது. Format செய்ய முயற்சிக்கவும்.', true);
                 } else {
                     showToast(`${filename} opened`);
                 }
             }
+
+            renderProjectFiles();
             closeProjectFiles();
         }
 
@@ -379,10 +407,10 @@
         window.duplicateProjectFile = duplicateProjectFile;
         window.deleteProjectFile = deleteProjectFile;
         const codeStore = {
-            html: `<div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg text-center">\n    <h1 class="text-3xl font-bold text-blue-600">Dev Edtr Pro</h1>\n    <p class="mt-2 text-gray-600 text-sm">HTML, CSS மற்றும் JavaScript தனித்தனியாக இயங்கும் வசதி!</p>\n    <button id="buyBtn" class="buy-btn mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg transition">\n        <span>Buy Now</span>\n    </button>\n</div>`,
-            css: `body {\n    background-color: #f3f4f6;\n    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n    padding: 2rem;\n}\n\n.buy-btn {\n    background: green;\n    color: white;\n    border-radius: .5rem;\n}\n\n.buy-btn:hover {\n    transform: translateY(-1px);\n}`,
-            js: `const buyBtn = document.getElementById("buyBtn");\nif (buyBtn) {\n    buyBtn.addEventListener("click", () => {\n        alert("Buying");\n    });\n}`,
-            single: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <script src="https://cdn.tailwindcss.com"><\/script>\n    <title>Dev Edtr Single File</title>\n    <style>\n        body { background-color: #eff6ff; padding: 2rem; }\n        .buy-btn { background: green; color: white; border-radius: 0.5rem; }\n    </style>\n</head>\n<body>\n    <div class="card max-w-md mx-auto p-6 bg-white rounded-xl shadow-lg">\n        <h1 class="text-2xl font-bold text-blue-600">Single HTML Mode</h1>\n        <button id="buyBtn" class="buy-btn mt-4 px-4 py-2">\n            <span>Buy Now</span>\n        </button>\n    </div>\n    <script>\n        const buyBtn = document.getElementById('buyBtn');\n        if (buyBtn) {\n            buyBtn.addEventListener('click', () => {\n                alert("Buying");\n            });\n        }\n    <\/script>\n</body>\n</html>`
+            html: '',
+            css: '',
+            js: '',
+            single: ''
         };
 
         // இயல்புநிலை மாடல்
@@ -1140,16 +1168,16 @@ Return ONLY the complete fixed code for this layer. No conversational text, no e
             const singleTabs = document.getElementById('single-tabs');
 
             if (mode === 'multi') {
-                multiBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition bg-blue-600 text-white shadow-sm";
-                singleBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition text-gray-600 dark:text-gray-300 hover:text-blue-600";
-                multiTabs.classList.remove('hidden');
-                singleTabs.classList.add('hidden');
+                if (multiBtn) multiBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition bg-blue-600 text-white shadow-sm";
+                if (singleBtn) singleBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition text-gray-600 dark:text-gray-300 hover:text-blue-600";
+                multiTabs?.classList.remove('hidden');
+                singleTabs?.classList.add('hidden');
                 switchTab('html');
             } else {
-                singleBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition bg-blue-600 text-white shadow-sm";
-                multiBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition text-gray-600 dark:text-gray-300 hover:text-blue-600";
-                singleTabs.classList.remove('hidden');
-                multiTabs.classList.add('hidden');
+                if (singleBtn) singleBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition bg-blue-600 text-white shadow-sm";
+                if (multiBtn) multiBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition text-gray-600 dark:text-gray-300 hover:text-blue-600";
+                singleTabs?.classList.remove('hidden');
+                multiTabs?.classList.add('hidden');
                 switchTab('single');
             }
         };
@@ -1188,6 +1216,11 @@ Return ONLY the complete fixed code for this layer. No conversational text, no e
             const resizer = document.getElementById('split-resizer');
             const mainSplit = document.querySelector('.main-split');
             if (!resizer || !mainSplit || !editorPanel || !outputPanel) return;
+
+            // Mobile browsers otherwise treat the drag as page scrolling.
+            resizer.style.touchAction = 'none';
+            resizer.style.webkitUserSelect = 'none';
+            resizer.style.userSelect = 'none';
 
             const DESKTOP_KEY = 'dev_edtr_split_ratio';
             const MOBILE_KEY = 'dev_edtr_mobile_split_ratio';
@@ -1308,25 +1341,30 @@ Return ONLY the complete fixed code for this layer. No conversational text, no e
                 dragging = true;
                 resizer.classList.add('dragging');
                 document.body.classList.add('split-resizing');
-                resizer.setPointerCapture?.(e.pointerId);
+                try { resizer.setPointerCapture?.(e.pointerId); } catch (_) {}
                 e.preventDefault();
-            });
+                e.stopPropagation();
+            }, { passive: false });
 
-            resizer.addEventListener('pointermove', (e) => {
+            const handlePointerMove = (e) => {
                 if (!dragging) return;
+                e.preventDefault();
                 move(e.clientX, e.clientY);
-            });
+            };
 
-            function stopDrag(e) {
+            const handlePointerUp = (e) => {
                 if (!dragging) return;
                 dragging = false;
                 resizer.classList.remove('dragging');
                 document.body.classList.remove('split-resizing');
                 try { resizer.releasePointerCapture?.(e.pointerId); } catch (_) {}
-            }
+            };
 
-            resizer.addEventListener('pointerup', stopDrag);
-            resizer.addEventListener('pointercancel', stopDrag);
+            // Window fallback is important on mobile WebViews where pointermove
+            // may leave the small resize handle while dragging.
+            window.addEventListener('pointermove', handlePointerMove, { passive: false });
+            window.addEventListener('pointerup', handlePointerUp, { passive: false });
+            window.addEventListener('pointercancel', handlePointerUp, { passive: false });
 
             window.addEventListener('resize', () => {
                 requestAnimationFrame(applySavedRatio);
@@ -1376,10 +1414,34 @@ Return ONLY the complete fixed code for this layer. No conversational text, no e
             showToast("Console Clear ஆனது.");
         };
 
+        // Explicit mobile-safe binding; keep inline onclick as backward compatibility.
+        function initConsoleToggle() {
+            if (!consoleToggleBtn || consoleToggleBtn.dataset.bound === '1') return;
+            consoleToggleBtn.dataset.bound = '1';
+            consoleToggleBtn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                window.toggleConsolePanel();
+            }, { passive: false });
+        }
+
         window.toggleConsolePanel = function() {
-            const isHidden = consoleOutputWrapper.classList.toggle('console-hidden');
-            consoleToggleIcon.className = isHidden ? 'fa-solid fa-angle-up' : 'fa-solid fa-angle-down';
-            showToast(isHidden ? "Console மறைக்கப்பட்டது" : "Console தோன்றியது");
+            if (!consoleOutputWrapper) return;
+
+            const isHidden = consoleOutputWrapper.classList.contains('console-hidden');
+            if (isHidden) {
+                consoleOutputWrapper.classList.remove('console-hidden');
+                consoleOutputWrapper.style.height = window.innerWidth <= 767 ? '110px' : '150px';
+                consoleOutputWrapper.style.minHeight = window.innerWidth <= 767 ? '110px' : '150px';
+                if (consoleToggleIcon) consoleToggleIcon.className = 'fa-solid fa-angle-down';
+                if (consoleToggleBtn) consoleToggleBtn.setAttribute('aria-expanded', 'true');
+            } else {
+                consoleOutputWrapper.classList.add('console-hidden');
+                consoleOutputWrapper.style.height = '0px';
+                consoleOutputWrapper.style.minHeight = '0px';
+                if (consoleToggleIcon) consoleToggleIcon.className = 'fa-solid fa-angle-up';
+                if (consoleToggleBtn) consoleToggleBtn.setAttribute('aria-expanded', 'false');
+            }
         };
 
         function hijackConsole(iframe) {
@@ -2565,17 +2627,53 @@ ${codeStore.js}
             }, 3000);
         }
 
+
+        function removeBuiltInStarterContent(parsed) {
+            if (!parsed || !parsed.store) return parsed;
+
+            const starterHints = [
+                'Dev Edtr Pro',
+                'HTML, CSS மற்றும் JavaScript தனித்தனியாக இயங்கும் வசதி',
+                'Single HTML Mode',
+                'Dev Edtr Single File',
+                'buyBtn'
+            ];
+
+            const looksLikeStarter = value => {
+                const text = String(value || '');
+                return starterHints.some(hint => text.includes(hint));
+            };
+
+            ['html', 'css', 'js', 'single'].forEach(key => {
+                if (looksLikeStarter(parsed.store[key])) parsed.store[key] = '';
+            });
+
+            if (parsed.projectFiles && typeof parsed.projectFiles === 'object') {
+                Object.keys(parsed.projectFiles).forEach(name => {
+                    const value = normalizeProjectFileValue(parsed.projectFiles[name]);
+                    if (value.encoding === 'utf8' && looksLikeStarter(value.content)) {
+                        // Remove only known starter files/content; never touch arbitrary user code.
+                        if (['index.html', 'style.css', 'script.js'].includes(name)) {
+                            parsed.projectFiles[name] = { content: '', encoding: 'utf8' };
+                        }
+                    }
+                });
+            }
+
+            return parsed;
+        }
+
         function loadCode() {
             try {
                 const saved = localStorage.getItem('liveEditor_pro_store');
                 if (saved) {
-                    const parsed = JSON.parse(saved);
+                    let parsed = JSON.parse(saved);
+                    parsed = removeBuiltInStarterContent(parsed);
                     if (parsed.store) {
                         Object.assign(codeStore, parsed.store);
                     }
                     loadProjectFilesFromStore(parsed);
-                    if (parsed.mode) switchMode(parsed.mode);
-                    else switchMode('multi');
+                    switchMode('multi');
                 } else {
                     loadProjectFilesFromStore(null);
                     switchMode('multi');
@@ -2999,6 +3097,7 @@ ${codeStore.js}
             renderProjectFiles();
             renderAiHistory();
             initPWA();
+            initConsoleToggle();
             if (databaseConfig?.url) {
                 databaseRequest(databaseConfig)
                     .then(() => setDatabaseStatus('Database Connected', true))
@@ -3047,37 +3146,74 @@ ${codeStore.js}
             if (projectSearch) projectSearch.addEventListener('input', renderProjectFiles);
             const upload = document.getElementById('project-file-upload');
             if (upload) upload.addEventListener('change', async (event) => {
+                const importedNames = [];
+
                 for (const file of Array.from(event.target.files || [])) {
                     const rawPath = file.webkitRelativePath || file.name;
                     const requested = sanitizeProjectPath(rawPath);
-                    if (!isValidProjectFilename(requested)) { showToast(`Invalid filename: ${file.name}`, true); continue; }
+
+                    if (!isValidProjectFilename(requested)) {
+                        showToast(`Invalid filename: ${file.name}`, true);
+                        continue;
+                    }
+
+                    // Never overwrite an existing file. Make a unique copy name.
                     const safe = uniqueProjectFilename(requested);
-                    if (safe !== requested) showToast(`${requested} already exists → imported as ${safe}`);
                     const ext = getFileExtension(safe);
+
                     try {
+                        let record;
+
                         if (BINARY_EXTENSIONS.has(ext)) {
-                            const dataUrl = await new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(file); });
-                            projectFiles[safe] = {content:dataUrl, encoding:'base64'};
+                            const dataUrl = await new Promise((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = () => resolve(reader.result);
+                                reader.onerror = () => reject(reader.error);
+                                reader.readAsDataURL(file);
+                            });
+                            record = { content: dataUrl, encoding: 'base64' };
                         } else {
+                            // Read the REAL uploaded text content for every supported text extension.
                             const content = await file.text();
-                            projectFiles[safe] = {content, encoding:'utf8'};
+                            record = { content, encoding: 'utf8' };
+
+                            // Core files also update the live editor stores.
                             if (safe === 'index.html') codeStore.html = content;
                             if (safe === 'style.css') codeStore.css = content;
                             if (safe === 'script.js') codeStore.js = content;
                         }
-                    } catch (e) { console.warn(e); showToast(`Could not add ${file.name}`, true); }
+
+                        projectFiles[safe] = record;
+                        importedNames.push(safe);
+
+                        if (safe !== requested) {
+                            showToast(`${requested} already exists → imported as ${safe}`);
+                        }
+                    } catch (error) {
+                        console.error('File import failed:', file.name, error);
+                        showToast(`Could not read ${file.name}`, true);
+                    }
                 }
+
                 upload.value = '';
-                saveProjectFiles();
-                syncCoreProjectFiles();
-                renderProjectFiles();
-                const addedNames = Object.keys(projectFiles);
-                if (addedNames.length) {
-                    const lastAdded = addedNames[addedNames.length - 1];
-                    if (projectFiles[lastAdded]) openProjectFile(lastAdded);
+
+                // Keep project storage in sync, but don't overwrite imported files.
+                if (importedNames.some(name => name === 'index.html' || name === 'style.css' || name === 'script.js')) {
+                    syncCoreProjectFiles();
                 }
+                saveProjectFiles();
+                renderProjectFiles();
+
+                // Open the actual file that was just imported.
+                const lastImported = importedNames[importedNames.length - 1];
+                if (lastImported && projectFiles[lastImported]) {
+                    openProjectFile(lastImported);
+                }
+
+                // Only the three runnable core files affect the live preview.
                 updateOutput();
             });
+
             initFirebase();
             loadApiKeyUI();
             initSplitResizer();

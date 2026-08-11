@@ -41,15 +41,6 @@
         </div>
 
         <div class="flex flex-wrap justify-center gap-2 items-center">
-            <!-- Mode Selector Toggle -->
-            <div class="bg-blue-50 dark:bg-gray-800 p-1 rounded-lg border border-blue-200 dark:border-gray-700 flex items-center gap-1">
-                <button onclick="switchMode('multi')" id="mode-btn-multi" class="px-2.5 py-1 text-xs font-bold rounded-md transition bg-blue-600 text-white shadow-sm">
-                    <i class="fa-solid fa-layer-group mr-1"></i> HTML / CSS / JS
-                </button>
-                <button onclick="switchMode('single')" id="mode-btn-single" class="px-2.5 py-1 text-xs font-bold rounded-md transition text-gray-600 dark:text-gray-300 hover:text-blue-600">
-                    <i class="fa-solid fa-file-code mr-1"></i> Single HTML
-                </button>
-            </div>
 
             <!-- Auto Format Code Button -->
             <button onclick="formatCurrentCode();" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition flex items-center gap-1.5" title="Auto Format Code">
@@ -128,16 +119,7 @@
                     <button onclick="switchTab('js')" id="tab-js" class="editor-tab-btn">
                         <i class="fa-brands fa-js text-yellow-400 text-sm"></i> JS
                     </button>
-                </div>
-
-                <!-- Single Mode Tab Header -->
-                <div id="single-tabs" class="hidden flex items-center gap-1">
-                    <button id="tab-single" class="editor-tab-btn active">
-                        <i class="fa-solid fa-code text-blue-400 text-sm"></i> index.html
-                    </button>
-                </div>
-
-                <!-- Character Count Badge -->
+                </div><!-- Character Count Badge -->
                 <div class="pr-2 text-xs text-gray-400 font-mono">
                     <span id="char-count" class="text-blue-400">0 chars</span>
                 </div>
@@ -146,7 +128,7 @@
             <!-- Editor Container with Line Numbers -->
             <div class="editor-container flex-1 overflow-hidden">
                 <div id="line-numbers" class="line-numbers">1</div>
-                <textarea id="html-code" class="code-input" placeholder="<!-- உங்கள் கோடை இங்கே டைப் செய்யவும்... -->" spellcheck="false"></textarea>
+                <textarea id="html-code" class="code-input" placeholder="" spellcheck="false"></textarea>
             </div>
 
             <!-- Range Selector Control Section (DEFAULT COLLAPSED/HIDDEN) -->
