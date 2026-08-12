@@ -108,11 +108,13 @@ function getCompiledHTML() {
         document.addEventListener('mouseover', (e) => {
             if (!active) return;
             e.target.style.outline = '2px dashed #2563eb';
+            e.target.style.cursor = 'crosshair';
         }, true);
 
         document.addEventListener('mouseout', (e) => {
             if (!active) return;
             e.target.style.outline = '';
+            e.target.style.cursor = '';
         }, true);
 
         document.addEventListener('click', (e) => {
@@ -121,23 +123,50 @@ function getCompiledHTML() {
             e.stopPropagation();
 
             const el = e.target;
-            const selector = el.id ? '#' + el.id : (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).join('.') : el.tagName.toLowerCase());
+            const selector = el.id ? '#' + el.id : (el.className && typeof el.className === 'string' && el.className.trim() ? '.' + el.className.trim().split(/\\s+/).join('.') : el.tagName.toLowerCase());
             
             window.parent.postMessage({
                 type: 'ELEMENT_INSPECTED',
                 selector: selector,
                 outerHTML: el.outerHTML,
                 tagName: el.tagName.toLowerCase(),
-                id: el.id,
-                className: el.className
+                id: el.id || '',
+                className: typeof el.className === 'string' ? el.className : ''
             }, '*');
         }, true);
     })();
     <\/script>`;
 
+    let currentHtml = codeStore.html || '';
+
+    // Single HTML Code பரிசோதனை
+    if (currentHtml.includes('<html') || currentHtml.includes('<!DOCTYPE') || currentHtml.includes('<body')) {
+        if (currentHtml.includes('</head>')) {
+            currentHtml = currentHtml.replace('</head>', `${consoleHijackScript}</head>`);
+        } else {
+            currentHtml = consoleHijackScript + currentHtml;
+        }
+
+        if (currentHtml.includes('</body>')) {
+            currentHtml = currentHtml.replace('</body>', `${inspectScript}</body>`);
+        } else {
+            currentHtml = currentHtml + inspectScript;
+        }
+
+        if (codeStore.css && codeStore.css.trim()) {
+            currentHtml = currentHtml.replace('</head>', `<style>${codeStore.css}</style></head>`);
+        }
+        if (codeStore.js && codeStore.js.trim()) {
+            currentHtml = currentHtml.replace('</body>', `<script>${codeStore.js}<\/script></body>`);
+        }
+
+        return currentHtml;
+    }
+
     return `<!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   ${consoleHijackScript}
   <style>${codeStore.css}</style>
 </head>
@@ -151,6 +180,8 @@ ${codeStore.html}
 
 function updateOutput() {
     codeStore[activeTab] = htmlCode.value;
+    projectFiles[activeTab === 'html' ? 'index.html' : activeTab === 'css' ? 'style.css' : 'script.js'] = htmlCode.value;
+    
     charCount.textContent = `${htmlCode.value.length} chars`;
     updateLineNumbers();
 
@@ -202,7 +233,7 @@ window.addEventListener('message', (e) => {
     if (e.data?.type === 'CONSOLE_LOG') {
         const { logType, message } = e.data;
         const line = document.createElement('div');
-        line.className = logType === 'error' ? 'text-red-400' : logType === 'warn' ? 'text-yellow-400' : 'text-gray-300';
+        line.className = logType === 'error' ? 'text-red-400 border-b border-gray-800 py-0.5' : logType === 'warn' ? 'text-yellow-400 border-b border-gray-800 py-0.5' : 'text-gray-300 border-b border-gray-800 py-0.5';
         line.textContent = `[${logType.toUpperCase()}] ${message}`;
         consoleOutput?.appendChild(line);
         if (consoleOutput) consoleOutput.scrollTop = consoleOutput.scrollHeight;
@@ -218,27 +249,70 @@ window.addEventListener('message', (e) => {
             js: findMatchingJs(selector, id)
         };
 
-        document.getElementById('ai-selected-element-display').textContent = selector;
-        document.getElementById('inspect-element-tag').textContent = selector;
+        const selectedDisplay = document.getElementById('ai-selected-element-display');
+        const inspectTag = document.getElementById('inspect-element-tag');
+
+        if (selectedDisplay) selectedDisplay.textContent = selector;
+        if (inspectTag) inspectTag.textContent = selector;
 
         updateAiLayerDisplay();
+        document.getElementById('ai-assistant-panel')?.classList.remove('hidden');
     }
 });
 
+// Single HTML மற்றும் CSS Tab இரண்டிலிருந்தும் CSS விதிகளைத் தேடுதல்
 function findMatchingCss(selector, id, className) {
-    const css = codeStore.css;
-    if (!css) return '/* No CSS Found */';
-    const lines = css.split('}');
-    const matched = lines.filter(line => line.includes(selector) || (id && line.includes('#' + id)) || (className && line.includes('.' + className)));
-    return matched.length ? matched.join('}\n') + '}' : '/* No direct CSS rules matched */';
+    let combinedCss = codeStore.css || '';
+    
+    const htmlText = codeStore.html || '';
+    const styleMatches = htmlText.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+    if (styleMatches) {
+        styleMatches.forEach(block => {
+            combinedCss += '\n' + block.replace(/<\/?style[^>]*>/gi, '');
+        });
+    }
+
+    if (!combinedCss.trim()) return '/* No CSS Found */';
+
+    const rules = combinedCss.split('}');
+    const classList = typeof className === 'string' ? className.trim().split(/\s+/).filter(Boolean) : [];
+
+    const matched = rules.filter(rule => {
+        if (!rule.trim()) return false;
+        if (selector && rule.includes(selector)) return true;
+        if (id && rule.includes('#' + id)) return true;
+        if (classList.some(c => rule.includes('.' + c))) return true;
+        return false;
+    });
+
+    return matched.length ? matched.join('}\n').trim() + '}' : '/* No direct matching CSS rule found */';
 }
 
+// Single HTML மற்றும் JS Tab இரண்டிலிருந்தும் JavaScript லாஜிக்குகளைத் தேடுதல்
 function findMatchingJs(selector, id) {
-    const js = codeStore.js;
-    if (!js) return '// No JS Found';
-    const lines = js.split('\n');
-    const matched = lines.filter(line => line.includes(selector) || (id && line.includes(id)));
-    return matched.length ? matched.join('\n') : '// No direct JS logic matched';
+    let combinedJs = codeStore.js || '';
+
+    const htmlText = codeStore.html || '';
+    const scriptMatches = htmlText.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+    if (scriptMatches) {
+        scriptMatches.forEach(block => {
+            combinedJs += '\n' + block.replace(/<\/?script[^>]*>/gi, '');
+        });
+    }
+
+    if (!combinedJs.trim()) return '// No JS Found';
+
+    const lines = combinedJs.split('\n');
+    const cleanSelector = selector.replace(/^[#\.]/, '');
+
+    const matched = lines.filter(line => {
+        if (id && line.includes(id)) return true;
+        if (cleanSelector && line.includes(cleanSelector)) return true;
+        if (selector && line.includes(selector)) return true;
+        return false;
+    });
+
+    return matched.length ? matched.join('\n').trim() : '// No direct matching JS logic found';
 }
 
 function updateAiLayerDisplay() {
@@ -248,7 +322,7 @@ function updateAiLayerDisplay() {
     if (title) title.textContent = `CURRENT ${activeAiLayer.toUpperCase()}`;
     if (display) {
         if (activeAiLayer === 'html') display.textContent = selectedElementData.html || 'No Element Selected';
-        if (activeAiLayer === 'css') display.textContent = selectedElementData.css || 'No Element Selected';
+        if (activeAiLayer === 'css') display.textContent = selectedElementData.css || '/* No CSS Context */';
         if (activeAiLayer === 'js') display.textContent = selectedElementData.js || '// No JS Context';
     }
 }
@@ -261,18 +335,20 @@ window.switchAiLayer = function(layer) {
 };
 
 window.saveApiKey = function() {
-    const key = document.getElementById('ai-api-key-input').value.trim();
+    const key = document.getElementById('ai-api-key-input')?.value.trim();
     if (key) {
         localStorage.setItem('gemini_api_key', key);
-        document.getElementById('ai-api-status').textContent = 'Saved';
-        document.getElementById('ai-api-status').className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-900/60 text-green-300';
+        const status = document.getElementById('ai-api-status');
+        if (status) {
+            status.textContent = 'Saved';
+            status.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-900/60 text-green-300';
+        }
         showToast("API Key சேமிக்கப்பட்டது!");
     } else {
         showToast("API Key-ஐ உள்ளிடவும்!", true);
     }
 };
 
-// AUTO FETCH & FALLBACK ENGINE FOR ALL GEMINI MODELS
 async function fetchAvailableGeminiModels(apiKey) {
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -288,7 +364,8 @@ async function fetchAvailableGeminiModels(apiKey) {
 
 window.requestAiFix = async function() {
     const apiKey = localStorage.getItem('gemini_api_key') || document.getElementById('ai-api-key-input')?.value.trim();
-    const instruction = document.getElementById('ai-instruction-input')?.value.trim();
+    const instructionInput = document.getElementById('ai-instruction-input');
+    const instruction = instructionInput?.value.trim();
 
     if (!apiKey) {
         showToast("Gemini API Key இல்லை! Key-ஐ சேமிக்கவும்.", true);
@@ -306,7 +383,6 @@ window.requestAiFix = async function() {
     if (fixBtnText) fixBtnText.textContent = "AI Generating...";
     if (fixIcon) fixIcon.className = "fa-solid fa-spinner animate-spin";
 
-    // Dynamic model discovery with fallbacks
     const fetchedModels = await fetchAvailableGeminiModels(apiKey);
     const defaultFallbackModels = [
         'gemini-3.6-flash',
@@ -329,8 +405,8 @@ JS: ${selectedElementData.js || 'N/A'}
 User Instruction: ${instruction}
 
 Important Rules:
-Return ONLY the clean, executable code snippet replacement for ${activeAiLayer.toUpperCase()}.
-Do NOT include any conversational text, explanations, or markdown code fences (like \`\`\`html or \`\`\`css).`;
+Return ONLY clean, executable code replacement for ${activeAiLayer.toUpperCase()}.
+Do NOT include any markdown code fences (like \`\`\`html or \`\`\`css), conversational text, or explanations.`;
 
     let success = false;
     let lastError = null;
@@ -357,9 +433,17 @@ Do NOT include any conversational text, explanations, or markdown code fences (l
                 const cleanCode = resultText.replace(/```[a-z]*\n?/gi, '').replace(/```$/g, '').trim();
 
                 if (activeAiLayer === 'css') {
-                    codeStore.css += `\n\n/* AI Generated CSS */\n${cleanCode}`;
+                    if (codeStore.html.includes('</style>')) {
+                        codeStore.html = codeStore.html.replace('</style>', `\n  /* AI Generated CSS */\n  ${cleanCode}\n</style>`);
+                    } else {
+                        codeStore.css += `\n\n/* AI Generated CSS */\n${cleanCode}`;
+                    }
                 } else if (activeAiLayer === 'js') {
-                    codeStore.js += `\n\n/* AI Generated JS */\n${cleanCode}`;
+                    if (codeStore.html.includes('</script>')) {
+                        codeStore.html = codeStore.html.replace('</script>', `\n  // AI Generated JS\n  ${cleanCode}\n<\/script>`);
+                    } else {
+                        codeStore.js += `\n\n/* AI Generated JS */\n${cleanCode}`;
+                    }
                 } else {
                     if (selectedElementData.html && codeStore.html.includes(selectedElementData.html)) {
                         codeStore.html = codeStore.html.replace(selectedElementData.html, cleanCode);
@@ -371,7 +455,7 @@ Do NOT include any conversational text, explanations, or markdown code fences (l
                 if (activeTab === activeAiLayer) htmlCode.value = codeStore[activeTab];
                 updateOutput();
                 showToast(`AI Fix வெற்றியடைந்தது! (${model})`);
-                document.getElementById('ai-instruction-input').value = '';
+                if (instructionInput) instructionInput.value = '';
                 success = true;
                 break;
             }
