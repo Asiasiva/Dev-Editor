@@ -1403,7 +1403,8 @@ const codeStore = {
 };
 
 // இயல்புநிலை மாடல்
-let GEMINI_MODEL_NAME = "gemini-3.6-flash"; 
+let GEMINI_MODEL_NAME = localStorage.getItem('dev_edtr_gemini_model') || '';
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 let isAiProcessing = false;
 let debounceTimer;
@@ -1632,24 +1633,102 @@ async function initFirebase() {
 // --- GEMINI API KEY MANAGEMENT ---
 
 async function getAvailableGeminiModels(apiKey) {
+    if (!apiKey) return [];
     try {
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + apiKey);
-        if (!response.ok) throw new Error("Models list-ஐ பெற முடியவில்லை.");
-        
+        const response = await fetch(`${GEMINI_API_BASE}?key=${encodeURIComponent(apiKey)}`);
+        if (!response.ok) throw new Error(`Models API HTTP ${response.status}`);
         const data = await response.json();
-        
-        return data.models
-            .filter(m => m.name.includes('gemini') && m.supportedGenerationMethods.includes('generateContent'))
-            .map(m => m.name.replace('models/', ''));
+        return (data.models || [])
+            .filter(m => m && typeof m.name === 'string' &&
+                Array.isArray(m.supportedGenerationMethods) &&
+                m.supportedGenerationMethods.includes('generateContent'))
+            .map(m => m.name.replace(/^models\//, ''))
+            .filter(Boolean);
     } catch (error) {
-        console.error("Auto fetch models error:", error);
-        return [
-            "gemini-2.5-flash",
-            "gemini-3.1-flash-lite",
-            "gemini-3.5-flash",
-            "gemini-3-flash-preview"
-        ];
+        console.error('Auto fetch models error:', error);
+        return [];
     }
+}
+
+function rankGeminiModels(models) {
+    return [...new Set(models)].sort((a, b) => {
+        const score = (name) => {
+            const n = String(name).toLowerCase();
+            let v = 0;
+            if (n.includes('flash')) v += 100;
+            if (n.includes('pro')) v += 70;
+            if (!n.includes('preview')) v += 20;
+            if (n.includes('lite')) v += 10;
+            if (n.includes('embedding') || n.includes('image') || n.includes('tts')) v -= 500;
+            return v;
+        };
+        return score(b) - score(a);
+    });
+}
+
+async function testGeminiModel(apiKey, modelName, prompt = 'Reply with OK') {
+    const model = String(modelName || '').replace(/^models\//, '').trim();
+    if (!apiKey || !model) return false;
+    const url = `${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        return response.ok;
+    } catch (error) {
+        console.warn(`Gemini model ${model} failed`, error);
+        return false;
+    }
+}
+
+async function resolveGeminiModel(apiKey, forceRefresh = false) {
+    if (!apiKey) throw new Error('Gemini API Key இல்லை.');
+
+    if (!forceRefresh && GEMINI_MODEL_NAME) {
+        if (await testGeminiModel(apiKey, GEMINI_MODEL_NAME)) return GEMINI_MODEL_NAME;
+        GEMINI_MODEL_NAME = '';
+        localStorage.removeItem('dev_edtr_gemini_model');
+    }
+
+    const available = rankGeminiModels(await getAvailableGeminiModels(apiKey));
+    for (const model of available) {
+        if (await testGeminiModel(apiKey, model)) {
+            GEMINI_MODEL_NAME = model;
+            localStorage.setItem('dev_edtr_gemini_model', model);
+            return model;
+        }
+    }
+    throw new Error('இந்த API Key-க்கு வேலை செய்யும் Gemini generateContent model கிடைக்கவில்லை.');
+}
+
+async function callGemini(promptText, apiKey) {
+    const model = await resolveGeminiModel(apiKey, false);
+    const url = `${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    let response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+
+    if (!response.ok) {
+        GEMINI_MODEL_NAME = '';
+        localStorage.removeItem('dev_edtr_gemini_model');
+        const fallbackModel = await resolveGeminiModel(apiKey, true);
+        const fallbackUrl = `${GEMINI_API_BASE}/${encodeURIComponent(fallbackModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        response = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+        });
+    }
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `Gemini API HTTP ${response.status}`);
+    }
+    return response.json();
 }
 
 window.toggleAiPanel = function() {
@@ -1713,53 +1792,17 @@ window.testApiKey = async function() {
         showToast("முதலில் API Key-ஐ உள்ளிடவும்!", true);
         return;
     }
-
     const testBtn = document.getElementById('ai-test-btn');
     testBtn.disabled = true;
-    testBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Checking Models...`;
-
+    testBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Finding Gemini...`;
     try {
-        const availableModels = await getAvailableGeminiModels(apiKey);
-
-        const customModelsToTry = [
-            "gemini-2.5-flash",
-            "gemini-3.5-flash",        
-            "gemini-3.1-flash-lite",   
-            "gemini-3-flash-preview"
-        ];
-
-        const modelsToTry = Array.from(new Set([...customModelsToTry, ...availableModels]));
-
-        let workingModel = null;
-
-        for (const model of modelsToTry) {
-            try {
-                const targetUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
-                const response = await fetch(targetUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }] })
-                });
-
-                if (response.ok) {
-                    workingModel = model;
-                    break;
-                }
-            } catch (e) {
-                console.warn(`Model ${model} failed, testing next...`);
-            }
-        }
-
-        if (workingModel) {
-            GEMINI_MODEL_NAME = workingModel;
-            showToast(`வெற்றி! ${workingModel} மாடல் இணைக்கப்பட்டது.`);
-            updateApiStatus(true);
-        } else {
-            showToast("எந்த Gemini மாடலும் வேலை செய்யவில்லை. API Key-ஐ சரிபார்க்கவும்.", true);
-        }
+        const workingModel = await resolveGeminiModel(apiKey, true);
+        showToast(`வெற்றி! ${workingModel} மாடல் இணைக்கப்பட்டது.`);
+        updateApiStatus(true);
     } catch (err) {
-        console.error("API Test Error:", err);
-        showToast(`பிழை: ${err.message}`, true);
+        console.error('API Test Error:', err);
+        showToast(`Gemini பிழை: ${err.message}`, true);
+        updateApiStatus(false);
     } finally {
         testBtn.disabled = false;
         testBtn.innerHTML = `<i class="fa-solid fa-plug"></i> Test Connection`;
@@ -1906,22 +1949,7 @@ DO NOT include markdown syntax around JSON if possible, no markdown backticks, n
     fixBtnText.textContent = `AI is updating HTML, CSS & JS...`;
 
     try {
-const targetUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL_NAME + ":generateContent?key=" + apiKey;
-        
-        const response = await fetch(targetUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: promptText }] }]
-            })
-        });
-
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error?.message || `HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
+const data = await callGemini(promptText, apiKey);
         const rawResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         const cleanGeneratedJson = sanitizeAiResponse(rawResponseText);
 
@@ -2098,17 +2126,7 @@ Return ONLY the complete fixed code for this layer. No conversational text, no e
     showToast("AI மூலம் பிழை சரிசெய்யப்படுகிறது...");
 
     try {
-        const targetUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL_NAME + ":generateContent?key=" + apiKey;
-        
-        const response = await fetch(targetUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const data = await response.json();
+        const data = await callGemini(promptText, apiKey);
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         const cleanCode = sanitizeAiResponse(rawText);
 
@@ -3122,7 +3140,13 @@ function getCompiledHTML(includeInspectScript = true) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"><\/script>
     <style>
-${codeStore.css}
+        /* Dev Edtr Preview Auto-Fit */
+        html, body { max-width: 100%; overflow-x: hidden; }
+        *, *::before, *::after { box-sizing: border-box; }
+        img, video, svg, canvas, iframe { max-width: 100%; }
+        table { max-width: 100%; }
+        pre, code { max-width: 100%; overflow-x: auto; }
+        ${codeStore.css}
     </style>
 </head>
 <body>
@@ -3156,6 +3180,9 @@ function updateOutput() {
     currentBlobUrl = URL.createObjectURL(blob);
 
     outputFrame.onload = () => {
+        // Keep preview inside the available panel without changing the uploaded app's layout.
+        outputFrame.style.maxWidth = '100%';
+        outputFrame.style.maxHeight = '100%';
         hijackConsole(outputFrame);
         if (isInspectActive && outputFrame.contentWindow) {
             outputFrame.contentWindow.postMessage({
@@ -3814,23 +3841,83 @@ window.addEventListener('DOMContentLoaded', () => {
     if (projectSearch) projectSearch.addEventListener('input', renderProjectFiles);
     const upload = document.getElementById('project-file-upload');
     if (upload) upload.addEventListener('change', async (event) => {
-        for (const file of Array.from(event.target.files || [])) {
+        const files = Array.from(event.target.files || []);
+        let importedCore = [];
+
+        for (const file of files) {
             const safe = sanitizeProjectPath(file.name);
-            if (!isValidProjectFilename(safe)) { showToast(`Invalid filename: ${file.name}`, true); continue; }
+            if (!isValidProjectFilename(safe)) {
+                showToast(`Invalid filename: ${file.name}`, true);
+                continue;
+            }
+
             const ext = getFileExtension(safe);
             try {
                 if (BINARY_EXTENSIONS.has(ext)) {
-                    const dataUrl = await new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(file); });
+                    const dataUrl = await new Promise((resolve,reject)=>{
+                        const r = new FileReader();
+                        r.onload=()=>resolve(r.result);
+                        r.onerror=reject;
+                        r.readAsDataURL(file);
+                    });
                     projectFiles[safe] = {content:dataUrl, encoding:'base64'};
+                    continue;
+                }
+
+                let content = await file.text();
+                if (ext === 'html' || ext === 'htm') {
+                    codeStore.html = content;
+                    projectFiles['index.html'] = {content, encoding:'utf8'};
+                    activeProjectFile = 'index.html';
+                    importedCore.push('HTML');
+                } else if (ext === 'css') {
+                    content = content.replace(/^\s*<style[^>]*>/i,'').replace(/<\/style>\s*$/i,'');
+                    codeStore.css = content;
+                    projectFiles['style.css'] = {content, encoding:'utf8'};
+                    activeProjectFile = 'style.css';
+                    importedCore.push('CSS');
+                } else if (ext === 'js' || ext === 'mjs') {
+                    content = content.replace(/^\s*<script[^>]*>/i,'').replace(/<\/script>\s*$/i,'');
+                    codeStore.js = content;
+                    projectFiles['script.js'] = {content, encoding:'utf8'};
+                    activeProjectFile = 'script.js';
+                    importedCore.push('JS');
                 } else {
-                    const content = await file.text();
                     projectFiles[safe] = {content, encoding:'utf8'};
                 }
-            } catch (e) { console.warn(e); showToast(`Could not add ${file.name}`, true); }
+            } catch (e) {
+                console.warn(e);
+                showToast(`Could not add ${file.name}`, true);
+            }
         }
+
         upload.value = '';
         saveProjectFiles();
         renderProjectFiles();
+
+        if (importedCore.length) {
+            // Always return to the multi-file editor after core source upload.
+            currentMode = 'multi';
+            const multiBtn = document.getElementById('mode-btn-multi');
+            const singleBtn = document.getElementById('mode-btn-single');
+            const multiTabs = document.getElementById('multi-tabs');
+            const singleTabs = document.getElementById('single-tabs');
+            if (multiBtn) multiBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition bg-blue-600 text-white shadow-sm";
+            if (singleBtn) singleBtn.className = "px-2.5 py-1 text-xs font-bold rounded-md transition text-gray-600 dark:text-gray-300 hover:text-blue-600";
+            multiTabs?.classList.remove('hidden');
+            singleTabs?.classList.add('hidden');
+
+            // Show the most useful uploaded layer; HTML gets priority.
+            const tab = importedCore.includes('HTML') ? 'html' : importedCore.includes('CSS') ? 'css' : 'js';
+            activeProjectFile = tab === 'html' ? 'index.html' : tab === 'css' ? 'style.css' : 'script.js';
+            activeTab = tab;
+            htmlCode.value = codeStore[tab] || '';
+            ['html','css','js','single'].forEach(t => document.getElementById(`tab-${t}`)?.classList.toggle('active', t === tab));
+            updateLineNumbers();
+            updateOutput();
+            saveCodeLocal();
+            showToast(`${importedCore.join(' + ')} file${importedCore.length > 1 ? 's' : ''} auto-loaded into editor.`);
+        }
     });
     initFirebase();
     loadApiKeyUI();
