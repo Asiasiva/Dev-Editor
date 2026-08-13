@@ -1496,7 +1496,6 @@ window.formatCurrentCode = function() {
             codeStore[activeTab] = formatted;
         }
         updateOutput();
-        saveCodeLocal();
         showToast("கோடு வெற்றிகரமாக Format செய்யப்பட்டது!");
     } catch (err) {
         console.warn("Formatting failed:", err);
