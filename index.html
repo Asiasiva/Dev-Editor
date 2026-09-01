@@ -3201,33 +3201,21 @@ function updateOutput() {
     charCount.textContent = `${htmlCode.value.length} chars`;
     updateLineNumbers(); 
 
-    // 1. தற்போதைய Scroll Position-ஐ சேமித்தல்
-    let scrollX = 0;
-    let scrollY = 0;
-    try {
-        if (outputFrame.contentWindow) {
-            scrollX = outputFrame.contentWindow.scrollX || outputFrame.contentWindow.pageXOffset || 0;
-            scrollY = outputFrame.contentWindow.scrollY || outputFrame.contentWindow.pageYOffset || 0;
-        }
-    } catch (e) {}
-
     const finalOutput = getCompiledHTML(true);
+    
+    if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
+        currentBlobUrl = null;
+    }
 
-    // 2. Blob URL-க்கு பதிலாக srcdoc பயன்பாடு (Blink தவிர்க்கப்படும்)
-    outputFrame.srcdoc = finalOutput;
+    const blob = new Blob([finalOutput], { type: 'text/html;charset=utf-8' });
+    currentBlobUrl = URL.createObjectURL(blob);
 
     outputFrame.onload = () => {
+        // Keep preview inside the available panel without changing the uploaded app's layout.
         outputFrame.style.maxWidth = '100%';
         outputFrame.style.maxHeight = '100%';
         hijackConsole(outputFrame);
-
-        // 3. பழைய Scroll Position-ஐ மீண்டும் நிலைநிறுத்துதல் (Top-க்கு செல்வது தவிர்க்கப்படும்)
-        try {
-            if (outputFrame.contentWindow) {
-                outputFrame.contentWindow.scrollTo(scrollX, scrollY);
-            }
-        } catch (e) {}
-
         if (isInspectActive && outputFrame.contentWindow) {
             outputFrame.contentWindow.postMessage({
                 type: 'DEV_EDTR_INSPECT_TOGGLE',
@@ -3235,7 +3223,6 @@ function updateOutput() {
             }, '*');
         }
     };
-}
 
     outputFrame.src = currentBlobUrl;
 }
